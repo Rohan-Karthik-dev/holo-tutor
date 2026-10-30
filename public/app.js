@@ -2272,7 +2272,7 @@ $('#muteBtn').addEventListener('click', () => {
 // Live transcript: what you're saying appears in the chat as you speak.
 let interimEl = null;
 function showInterim(text) {
-  if (!interimEl || !interimEl.isConnected) { interimEl = addMsg('you', ''); interimEl.el.classList.add('interim'); }
+  if (!interimEl || !interimEl.el.isConnected) { interimEl = addMsg('you', ''); interimEl.el.classList.add('interim'); }
   interimEl.set(text);
 }
 function hideInterim() { interimEl?.el.remove(); interimEl = null; }
