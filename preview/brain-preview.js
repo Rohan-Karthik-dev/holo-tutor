@@ -1,7 +1,7 @@
 // Preview build: asks Claude straight from the page (the viewer's own Claude account).
 import { rigFromPoints, FACE_PROMPT } from '../public/lips.js';
 import { tutorSystem, videoQueryPrompt, cleanVideos } from '../public/prompt.js';
-export const MIC_NOTE = 'This preview can\'t use the microphone. Open the standalone Holo Tutor for speech-to-speech.';
+export const MIC_NOTE = 'Tap the mic for voice typing: speak with your device\'s dictation (phone keyboard 🎤, Windows + H, or Edit → Start Dictation on a Mac) and I\'ll answer out loud.';
 export const KEY_NEEDED = false;
 export function getKey() { return ''; }
 export function setKey() {}

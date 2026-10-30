@@ -3340,7 +3340,7 @@ function cleanProfile(j) {
 }
 
 // Preview build: asks Claude straight from the page (the viewer's own Claude account).
-const MIC_NOTE = 'This preview can\'t use the microphone. Open the standalone Holo Tutor for speech-to-speech.';
+const MIC_NOTE = 'Tap the mic for voice typing: speak with your device\'s dictation (phone keyboard 🎤, Windows + H, or Edit → Start Dictation on a Mac) and I\'ll answer out loud.';
 const KEY_NEEDED = false;
 function getKey() { return ''; }
 function setKey() {}
@@ -5743,7 +5743,7 @@ let dictate = false, dictTimer = 0, micBlocked = false;
 const UA = navigator.userAgent || '';
 function dictTip() {
   if (/Android|iPhone|iPad|iPod/i.test(UA)) return 'Tap 🎤 on your keyboard and speak';
-  if (/Mac/i.test(UA)) return 'Press Fn (🌐) twice to dictate';
+  if (/Mac/i.test(UA)) return 'Edit → Start Dictation (or your dictation shortcut)';
   if (/Win/i.test(UA)) return 'Press Windows + H to dictate';
   return 'Use your keyboard\'s dictation to speak';
 }
