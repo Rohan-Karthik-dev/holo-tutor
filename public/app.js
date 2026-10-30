@@ -2349,15 +2349,30 @@ function drawWave(t) {
 }
 requestAnimationFrame(drawWave);
 // Voice picker (Settings): any voice this device offers, or Auto.
-// Android names voices like "en-in-x-ene-network": show "Indian English · Voice 2 · online" instead.
+// Android names voices like "en-in-x-ene-network": show "Indian English · Male 1 · online" instead.
 const VOICE_REGION = { US: 'American', GB: 'British', UK: 'British', IN: 'Indian', AU: 'Australian', CA: 'Canadian', IE: 'Irish', NZ: 'New Zealand', ZA: 'South African', NG: 'Nigerian', SG: 'Singapore', PH: 'Philippine', KE: 'Kenyan', GH: 'Ghanaian', TZ: 'Tanzanian', PK: 'Pakistani' };
+// Devices don't say whether a voice is male or female, so this uses the names and codes of the
+// common voices (Google's Android voices, Apple, Microsoft, Chrome). Unknown voices get no tag.
+const GOOGLE_MALE = /^en-(us-x-(iol|iom|tpd)|gb-x-(gbb|gbd|rjs)|in-x-(end|ene)|au-x-(aub|aud))/i;
+const GOOGLE_FEMALE = /^en-(us-x-(sfg|tpf|tpc|iob|iog)|gb-x-(gba|gbc|gbg)|in-x-(ena|enc|ahp)|au-x-(aua|auc))/i;
+const NAMED_MALE = /\b(male|man|daniel|fred|rishi|alex|aaron|arthur|gordon|oliver|reed|rocko|eddy|grandpa|ralph|albert|junior|bruce|tom|lee|thomas|nathan|evan|david|mark|guy|ryan|george|prabhat|ravi|christopher|eric|brian|andrew|roger|liam|william|james|jacob|matthew|noah)\b/i;
+const NAMED_FEMALE = /\b(female|woman|samantha|karen|moira|tessa|veena|fiona|victoria|allison|ava|susan|serena|kate|nicky|zoe|isha|kathy|flo|sandy|shelley|grandma|zira|hazel|heera|aria|jenny|michelle|sonia|natasha|neerja|libby|emma|olivia|catherine|linda|kalpana)\b/i;
+function voiceGender(v) {
+  const n = String(v.name || '');
+  if (/female/i.test(n)) return 'Female';
+  if (GOOGLE_MALE.test(n) || NAMED_MALE.test(n)) return 'Male';
+  if (GOOGLE_FEMALE.test(n) || NAMED_FEMALE.test(n)) return 'Female';
+  if (/^Google (US|UK) English$/i.test(n) || /^Google .*English/i.test(n)) return 'Female'; // Chrome's default Google voices
+  return '';
+}
 function voiceLabel(v, counts) {
   const region = String(v.lang || '').replace('_', '-').split('-')[1] || '';
   const accent = (VOICE_REGION[region.toUpperCase()] || region.toUpperCase()) + ' English';
   const online = v.localService === false || /network/i.test(v.name);
+  const gender = voiceGender(v);
   if (/^[a-z]{2,3}[-_][a-z]{2,3}[-_]x[-_]/i.test(v.name) || /^[a-z]{2}[-_][A-Z]{2}(-language)?$/.test(v.name)) {
-    const k = accent + (online ? 'o' : 'l'); counts[k] = (counts[k] || 0) + 1;
-    return `${accent.trim()} · Voice ${counts[k]}${online ? ' · online, more natural' : ''}`;
+    const k = accent + gender + (online ? 'o' : 'l'); counts[k] = (counts[k] || 0) + 1;
+    return `${accent.trim()} · ${gender || 'Voice'} ${counts[k]}${online ? ' · online, more natural' : ''}`;
   }
   return `${v.name} · ${accent.trim()}${online ? ' · online' : ''}`;
 }
@@ -2369,10 +2384,19 @@ function renderVoicePick() {
   const list = (en.length ? en : all).slice().sort((a, b) => a.lang.localeCompare(b.lang) || a.name.localeCompare(b.name));
   sel.disabled = false;
   sel.replaceChildren(new Option(`Auto (best English voice${voice && !prefs.voiceName ? ': ' + voice.name : ''})`, ''));
-  const n = {};
-  list.forEach((v) => sel.append(new Option(voiceLabel(v, n), v.voiceURI || v.name)));
+  const n = {}, groups = { Male: [], Female: [], '': [] };
+  list.forEach((v) => groups[voiceGender(v)].push(v));
+  for (const [g, title] of [['Male', 'Male voices'], ['Female', 'Female voices'], ['', 'Other voices']]) {
+    if (!groups[g].length) continue;
+    const og = document.createElement('optgroup'); og.label = title;
+    groups[g].forEach((v) => og.append(new Option(voiceLabel(v, n), v.voiceURI || v.name)));
+    sel.append(og);
+  }
   sel.value = list.some((v) => (v.voiceURI || v.name) === prefs.voiceName) ? prefs.voiceName : '';
-  note.textContent = all.length ? `${list.length} voice${list.length === 1 ? '' : 's'} on this device. Voices marked “online” need internet.` : 'No voices have loaded yet. If this stays empty, this device has no text-to-speech voices installed.';
+  const m = groups.Male.length, f = groups.Female.length;
+  note.textContent = all.length
+    ? `${list.length} English voice${list.length === 1 ? '' : 's'} on this device (${m} male, ${f} female${groups[''].length ? `, ${groups[''].length} other` : ''}). Voices marked “online” need internet.` + (m ? '' : ' No male voice found: on Android, open Settings → Text-to-speech → Google → Install voice data, pick English (India) or (US), and download the voices.')
+    : 'No voices have loaded yet. If this stays empty, this device has no text-to-speech voices installed.';
 }
 $('#voicePick').addEventListener('change', (e) => { savePref('voiceName', e.target.value); pickVoice(); renderVoiceStatus(); unlockAudio(); if (busy) interrupt(); speakOnce('Hi! This is how I sound now.'); });
 

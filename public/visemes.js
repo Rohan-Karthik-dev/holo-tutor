@@ -61,9 +61,30 @@ export function shapesFor(text) {
     if (/[,;:.!?।—-]/u.test(c)) { out[i] = 'pause'; continue; }
     const di = EN_DIGRAPH[t.slice(i, i + 2)];
     if (di) { out[i] = di; if (i + 1 < t.length) out[++i] = di; continue; }
+    if (/[0-9]/.test(c)) { out[i] = ['eh', 'ltdn']; continue; } // numbers are spoken as words
     const sh = EN[c] || INDIC[c] || (/\p{L}/u.test(c) ? 'kg' : 'space');
     // An Indic consonant with no vowel sign after it carries an "a" sound: consonant, then open.
     out[i] = INDIC_CONS.test(c) && !INDIC_SIGN.test(t[i + 1] || '') ? [sh, 'aa'] : sh;
+  }
+  return natural(t, out);
+}
+// English spelling isn't sound: silent letters keep the previous shape, and between words the
+// mouth moves straight on to the next word's first sound instead of closing every time.
+const SILENT_PAIRS = { gh: 0, kn: 0, wr: 0, mb: 1, wh: 1 }; // which letter of the pair is silent
+function natural(t, out) {
+  for (let i = 0; i < t.length; i++) {
+    const pair = t.slice(i, i + 2);
+    if (pair in SILENT_PAIRS) { const k = i + SILENT_PAIRS[pair]; if (pair === 'gh') { out[i] = out[i + 1] = out[i - 1] || 'space'; i++; continue; } if (k > 0) out[k] = k === i ? out[i + 1] : out[i]; }
+    // a final silent "e" (make, time, there): no extra vowel
+    if (t[i] === 'e' && /[a-z]/.test(t[i - 1] || '') && !/[a-z]/.test(t[i + 1] || '') && /[a-z]{3}$/.test(t.slice(Math.max(0, i - 3), i)) && !/[aeiouy]/.test(t[i - 1])) out[i] = out[i - 1];
+  }
+  for (let i = 0; i < out.length; i++) {
+    if (out[i] !== 'space') continue;
+    let j = i + 1; while (j < out.length && out[j] === 'space') j++;
+    const nx = out[j], prev = out[i - 1];
+    if (!nx || nx === 'pause' || !prev || prev === 'pause') continue; // keep a real rest at the edges
+    const n0 = Array.isArray(nx) ? nx[0] : nx;
+    out[i] = n0 === 'mbp' || n0 === 'fv' ? 'space' : [Array.isArray(prev) ? prev[1] : prev, n0];
   }
   return out;
 }

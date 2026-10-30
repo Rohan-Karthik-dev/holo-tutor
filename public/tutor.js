@@ -57,6 +57,24 @@ function holoize(src) {
   return c;
 }
 
+// How strongly each character's word is said: content words a bit stronger, little words
+// (the, a, of, to…) softer, the last word of a sentence trails off, plus natural variety.
+const SMALL_WORDS = new Set('a an the of to in on at is it and or but for as by be we you i he she they this that are was so if do'.split(' '));
+function wordStress(text) {
+  const out = new Array(text.length).fill(1);
+  const re = /[\p{L}\p{N}']+/gu; let m; const words = [];
+  while ((m = re.exec(text))) words.push(m);
+  words.forEach((w, k) => {
+    const small = SMALL_WORDS.has(w[0]);
+    let a = small ? 0.78 : w[0].length > 6 ? 1.08 : 1;
+    a *= 0.9 + Math.random() * 0.2;
+    const after = text.slice(w.index + w[0].length, w.index + w[0].length + 2);
+    if (/[.!?]/.test(after) || k === words.length - 1) a *= 0.9;
+    for (let i = w.index; i < w.index + w[0].length; i++) out[i] = a;
+  });
+  return out;
+}
+
 export class Tutor {
   constructor(canvas) {
     Object.assign(this, {
@@ -92,6 +110,7 @@ export class Tutor {
     // People often blink as they start a phrase.
     if (!this.speaking && this.blinkStart < 0 && Math.random() < 0.35) this.blinkNext = performance.now() + 60;
     this.text = (text || '').toLowerCase(); this.shapes = shapesFor(this.text); this.ptr = 0; this.lastChar = -1; this.cps = 14 * rate; this.speaking = true;
+    this.stress = wordStress(this.text);
   }
   sync(i) { if (typeof i === 'number' && i >= 0) this.ptr = i; }
   stopSpeaking() {
@@ -160,6 +179,9 @@ export class Tutor {
     const a = this.shapeAt(this.ptr), b = this.shapeAt(this.ptr + 0.6);
     const t = {};
     for (const k of MOUTH_KEYS) t[k] = a[k] * 0.75 + b[k] * 0.25;
+    // Stressed words open a little more, small words a little less, like real speech.
+    const sw = this.stress?.[Math.min(this.stress.length - 1, Math.floor(this.ptr))] ?? 1;
+    t.open *= sw; t.round = Math.min(1, t.round * (0.85 + sw * 0.15));
     // Lips must really meet for m/b/p and really touch the teeth for f/v.
     if (a.press > 0.5) { t.press = 1; t.open = 0; }
     if (a.fv > 0.5) t.fv = 1;
@@ -178,10 +200,20 @@ export class Tutor {
     if (this.speaking) this.ptr += (dt * this.cps) / 1000;
     // Ease each mouth feature toward its target: lips close quickly, open a bit slower.
     const tg = this.target();
+    // Each feature moves like muscle and jaw do: a damped spring (it accelerates and settles
+    // smoothly instead of snapping), lips close faster than the jaw opens.
+    const vel = this.vel || (this.vel = {});
+    const sdt = dt / 1000;
     for (const key of MOUTH_KEYS) {
       const closing = key === 'press' || key === 'fv' ? tg[key] > this[key] : tg[key] < this[key];
-      const tau = closing ? 32 : key === 'open' ? 55 : 70;
-      this[key] += (tg[key] - this[key]) * (1 - Math.exp(-dt / tau));
+      const w = closing ? 34 : key === 'open' ? 24 : key === 'press' || key === 'fv' ? 30 : 17; // stiffness (rad/s)
+      const z = 0.9; // just under critical damping: a hint of settle, no wobble
+      let v = vel[key] || 0, x = this[key];
+      for (let n = 0, steps = Math.max(1, Math.ceil(sdt / 0.008)); n < steps; n++) { // small steps keep it stable
+        const h = sdt / steps;
+        v += (w * w * (tg[key] - x) - 2 * z * w * v) * h; x += v * h;
+      }
+      vel[key] = v; this[key] = Math.max(key === 'wide' ? -0.1 : 0, Math.min(key === 'wide' ? 1.1 : 1.15, x));
     }
 
     // Blink: fast close (75 ms), short hold, slower open (170 ms).
@@ -212,9 +244,14 @@ export class Tutor {
       this.gtx = tx; this.gty = ty;
       this.gazeAt = now + hold;
     }
-    const g = 1 - Math.exp(-dt / 35);
-    const jitter = Math.sin(now / 97) * Math.sin(now / 263) * 0.015; // tiny fixation drift
-    this.gx += (this.gtx + jitter - this.gx) * g; this.gy += (this.gty - this.gy) * g;
+    // Tiny jumps while holding a look (micro-saccades), every half second or so.
+    if (!this.microAt || now > this.microAt) { this.mx = (Math.random() - 0.5) * 0.05; this.my = (Math.random() - 0.5) * 0.035; this.microAt = now + 350 + Math.random() * 700; }
+    const g = 1 - Math.exp(-dt / 28);
+    const jitter = Math.sin(now / 97) * Math.sin(now / 263) * 0.01; // slow drift
+    this.gx += (this.gtx + this.mx + jitter - this.gx) * g; this.gy += (this.gty + this.my - this.gy) * g;
+    // The upper lids follow the eyes: lower when looking down, a touch lower while thinking or smiling.
+    const lidT = Math.min(0.32, Math.max(0, this.gy) * 0.4 + (this.state === 'thinking' ? 0.06 : 0) + Math.max(0, this.smile - 0.3) * 0.12);
+    this.lidRest = (this.lidRest || 0) + (lidT - (this.lidRest || 0)) * (1 - Math.exp(-dt / 90));
 
     // Eyebrows stay still; a soft smile at rest and while listening.
     const chunk = this.text, frac = chunk.length ? this.ptr / chunk.length : 0;
@@ -434,7 +471,7 @@ export class Tutor {
     o.setTransform(1, 0, 0, 1, 0, 0);
     o.globalCompositeOperation = 'source-over';
     o.clearRect(0, 0, ow, oh);
-    const st = { open: this.open, wide: this.wide, round: this.round, press: this.press, fv: this.fv, tongue: this.tongue, blink: this.blink, gx: this.gx, gy: this.gy, brow: this.brow, smile: this.smile };
+    const st = { open: this.open, wide: this.wide, round: this.round, press: this.press, fv: this.fv, tongue: this.tongue, blink: Math.max(this.blink, this.lidRest || 0), gx: this.gx, gy: this.gy, brow: this.brow, smile: this.smile };
     // The person's own lips move; only the skin right around the mouth follows.
     const warp = faceWarp();
     const g = warp && warp.render(P, Q, st, crop, ow, oh);

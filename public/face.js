@@ -19,7 +19,9 @@ function quad(x1, y1, x2, y2, x3, y3) {
 export function rigParams(rig, aspect) {
   const mx = (rig.ml.x + rig.mr.x) / 2;
   const mw = Math.max(0.01, Math.abs(rig.mr.x - rig.ml.x) / 2);
-  const cx = (rig.ui.x + rig.li.x) / 2, cy = (rig.ui.y + rig.li.y) / 2;
+  const teethShow = rig.li.y - rig.ui.y > Math.max(0.004, (rig.lo.y - rig.uo.y) / 2) * 0.7;
+  // With teeth showing, the bite (where top and bottom teeth meet) sits lower: top teeth show more.
+  const cx = (rig.ui.x + rig.li.x) / 2, cy = rig.ui.y + (rig.li.y - rig.ui.y) * (teethShow ? 0.66 : 0.5);
   const [a, b, c] = quad(rig.ml.x, rig.ml.y, cx, cy, rig.mr.x, rig.mr.y);
   const seamC = (a * mx + b) * mx + c;
   const mwY = mw * aspect;
@@ -27,7 +29,8 @@ export function rigParams(rig, aspect) {
   const chinY = Math.max(rig.chin.y, seamC + mwY * 0.8);
   return {
     a, b, c, mx, mw, seamC, chinY, lipThick,
-    D: Math.min(mwY * 0.85, (chinY - seamC) * 0.6) * 0.6, // talking-size opening, not a yawn
+    // talking-size opening, not a yawn; smaller when the photo already shows teeth (a smile looks open already)
+    D: Math.min(mwY * 0.85, (chinY - seamC) * 0.6) * 0.6 * (teethShow ? 0.72 : 1),
     band: Math.max(0.0025, lipThick * 0.12),
     upperBand: Math.max(0.006, (rig.ui.y - rig.uo.y) * 1.6),
     jawCx: (rig.jl.x + rig.jr.x) / 2,
@@ -51,14 +54,15 @@ export function displace(P, x, y, st, side) {
   const u = smooth(0, 1, (y - lipBot) / Lb);
   const fall = 1 - u;
   const wideT = 1 - smooth(0.6, 1.5, dxm);
-  const hB = taper + (wideT - taper) * Math.min(1, Math.max(0, (y - seam) / (P.lipThick * 2.2 + 1e-6)));
+  const prof = Math.pow(Math.max(0, 1 - (dxm * dxm) / 0.95), 0.7); // the opening is rounded, like a real mouth, not a boat
+  const hB = prof + (wideT - prof) * Math.min(1, Math.max(0, (y - seam) / (P.lipThick * 2.2 + 1e-6)));
   let dy = st.open * P.D * below * hB * fall;
   const above = (1 - below) * smooth(seam - P.upperBand, seam - P.band, y);
-  dy -= st.open * P.D * 0.12 * taper * above;
+  dy -= st.open * P.D * 0.18 * prof * above;
   const rx = (x - P.mx) / (P.mw * 1.3), ry = (y - seam) / (P.lipThick * 2.2 + P.band);
   const rad = Math.exp(-(rx * rx + ry * ry));
   const cm = Math.min(1, dxm) * rad;
-  let dx = (st.wide - 0.5) * P.mw * 0.2 * sgn * cm;
+  let dx = ((st.wide - 0.5) * 0.2 - st.open * 0.06) * P.mw * sgn * cm; // corners draw in a little as the jaw drops
   const sx = (x - P.mx) / (P.mw * 1.2), sy = (y - seam) / (P.lipThick * 3 + P.band);
   const cw = smooth(0.35, 1.0, dxm) * Math.exp(-(sx * sx + sy * sy)) * (st.smile || 0) * 0.6;
   dy -= P.lipThick * 1.1 * cw;
@@ -118,14 +122,15 @@ vec2 mouthMove(float x, float y, float side) {
   float Lb = max(D * 2.6, lt * 6.0);
   float fall = 1.0 - smoothstep(0.0, 1.0, (y - lipBot) / Lb);
   float wideT = 1.0 - smoothstep(0.6, 1.5, dxm);
-  float hB = mix(taper, wideT, clamp((y - seam) / (lt * 2.2 + 1e-6), 0.0, 1.0));
+  float prof = pow(max(0.0, 1.0 - dxm * dxm / 0.95), 0.7);
+  float hB = mix(prof, wideT, clamp((y - seam) / (lt * 2.2 + 1e-6), 0.0, 1.0));
   float dy = open * D * below * hB * fall;
   float above = (1.0 - below) * smoothstep(seam - u_ub.x, seam - band, y);
-  dy -= open * D * 0.12 * taper * above;
+  dy -= open * D * 0.18 * prof * above;
   float rx = (x - mx) / (mw * 1.3); float ry = (y - seam) / (lt * 2.2 + band);
   float rad = exp(-(rx * rx + ry * ry));
   float cm = min(1.0, dxm) * rad;
-  float dx = (wide - 0.5) * mw * 0.2 * sg * cm;
+  float dx = ((wide - 0.5) * 0.2 - open * 0.06) * mw * sg * cm;
   float sx = (x - mx) / (mw * 1.2); float sy = (y - seam) / (lt * 3.0 + band);
   float cw = smoothstep(0.35, 1.0, dxm) * exp(-(sx * sx + sy * sy)) * u_f.w * 0.6;
   dy -= lt * 1.1 * cw;
@@ -187,17 +192,17 @@ uniform sampler2D u_tex; uniform vec4 u_crop; uniform vec2 u_size; uniform float
 uniform vec4 u_e1; uniform vec4 u_e2;
 varying vec2 v_uv;
 ${MOUTH_GLSL}
-vec2 lid(vec4 e, vec2 uv, float b, inout float shade) {
+vec2 lid(vec4 e, vec2 uv, float b, inout float shade, inout float soft) {
   if (e.z <= 0.0 || b <= 0.001) return uv;
   float rx = e.z * 1.3; float ry = e.w * 1.25;            // a little larger than the found eye
   float u = (uv.x - e.x) / rx;
   if (abs(u) >= 1.0) return uv;
   float sh = pow(1.0 - u * u, 0.55);                        // almond shape
-  b *= 1.0 - smoothstep(0.45, 1.0, abs(u));                 // ease the lid into the corners: no hard rim
+  b *= 1.0 - smoothstep(0.82, 1.0, abs(u));                 // closes right into the corners, fading only at the very tips
   float ytop = e.y - ry * sh;                               // lash line at rest
   float ybot = e.y + ry * 0.8 * sh;                         // lower lid line
   float yLid = ytop + b * (ybot - ytop);                    // where the lid's edge is now
-  float S = e.w * 0.8;                                      // lid skin that slides down (stops well below the eyebrow)
+  float S = e.w * 0.8 * (0.35 + 0.65 * sh);                 // lid skin that slides down: curved like the lid, never up to the brow
   float y0 = ytop - S;
   if (uv.y > yLid) {                                        // the eye below the lid: shadowed near the edge
     shade = max(shade, b * 0.45 * sh * (1.0 - smoothstep(0.0, ry * 0.45, uv.y - yLid)) * (1.0 - smoothstep(ybot, ybot + ry * 0.2, uv.y)));
@@ -205,27 +210,50 @@ vec2 lid(vec4 e, vec2 uv, float b, inout float shade) {
   }
   if (uv.y < y0) return uv;
   float t = (uv.y - y0) / (S + (yLid - ytop));             // 0..1 down the moving lid
-  shade = max(shade, b * 0.12 * sh * smoothstep(0.55, 0.9, t)); // the lid's own soft shading
+  shade = max(shade, b * 0.14 * sh * smoothstep(0.55, 0.95, t)); // the lid curves away near its edge
   // The lash line keeps its natural thickness along the lid's edge; only the smooth skin above it stretches.
   float lash = e.w * 0.3;
   float edgeTop = yLid - lash;
-  if (uv.y >= edgeTop) return vec2(uv.x, ytop - lash + (uv.y - edgeTop));
-  return vec2(uv.x, y0 + (uv.y - y0) / max(edgeTop - y0, 1e-5) * (S - lash));
+  if (uv.y >= edgeTop) { soft = max(soft, b * e.z * 0.04); return vec2(uv.x, ytop - lash + (uv.y - edgeTop)); }
+  float f = (uv.y - y0) / max(edgeTop - y0, 1e-5);
+  float ys = y0 + f * (S - lash);
+  // Covering the eye, the lid is smooth skin: take it from one band of lid skin (not the stretched
+  // crease and lashes, which would streak) and soften it sideways.
+  float band = y0 + (S - lash) * 0.2;                       // the smooth skin of the upper lid, below the brow
+  float k = smoothstep(0.1, 0.55, f) * min(1.0, b * 1.5);
+  soft = max(soft, e.z * 0.28 * k);
+  return vec2(uv.x, mix(ys, band, k * 0.9));
 }
 void main() {
-  float shade = 0.0;
-  vec2 uv = lid(u_e1, v_uv, u_s.z, shade);
-  uv = lid(u_e2, uv, u_s.z, shade);
+  float shade = 0.0; float soft = 0.0;
+  vec2 uv = lid(u_e1, v_uv, u_s.z, shade, soft);
+  uv = lid(u_e2, uv, u_s.z, shade, soft);
   vec4 c = texture2D(u_tex, uv);
+  if (soft > 0.0) {
+    c = c * 0.28 + (texture2D(u_tex, uv + vec2(soft * 0.5, 0.0)) + texture2D(u_tex, uv - vec2(soft * 0.5, 0.0))) * 0.22
+      + (texture2D(u_tex, uv + vec2(soft, 0.0)) + texture2D(u_tex, uv - vec2(soft, 0.0))) * 0.14;
+  }
   c.rgb *= 1.0 - shade;
   if (u_hole > 0.0) {
     vec2 p = vec2(u_crop.x + gl_FragCoord.x / u_size.x * u_crop.z, u_crop.y + (1.0 - gl_FragCoord.y / u_size.y) * u_crop.w);
-    float seam = (u_seam.x * p.x + u_seam.y) * p.x + u_seam.z;
-    float yT = seam + mouthMove(p.x, seam, 0.0).y;   // where the upper lip's edge is now
-    float yB = seam + mouthMove(p.x, seam, 1.0).y;   // where the lower lip's edge is now
-    float e = 0.7 * u_crop.w / u_size.y;              // about a pixel, for a soft edge
+    // Which point of the lip line moved here? (the lips also slide sideways: rounding pulls the
+    // corners in, so the opening narrows with them instead of ending in a straight cut)
+    float x0 = p.x;
+    for (int k = 0; k < 3; k++) {
+      float s0 = (u_seam.x * x0 + u_seam.y) * x0 + u_seam.z;
+      x0 = p.x - 0.5 * (mouthMove(x0, s0, 0.0).x + mouthMove(x0, s0, 1.0).x);
+    }
+    float seam = (u_seam.x * x0 + u_seam.y) * x0 + u_seam.z;
+    float yT = seam + mouthMove(x0, seam, 0.0).y;   // where the upper lip's edge is now
+    float yB = seam + mouthMove(x0, seam, 1.0).y;   // where the lower lip's edge is now
+    float e = 1.1 * u_crop.w / u_size.y;              // about a pixel, for a soft edge
     float hole = smoothstep(yT - e, yT + e, p.y) * (1.0 - smoothstep(yB - e, yB + e, p.y));
-    hole *= smoothstep(e, 3.0 * e, yB - yT);         // only once the lips have really parted
+    float parted = smoothstep(e, 3.0 * e, yB - yT);
+    hole *= parted;                                    // only once the lips have really parted
+    // The lips' inner edges curl into the mouth, so they're a little darker right at the opening.
+    float rim = 4.0 * e + (yB - yT) * 0.12;
+    float edge = (1.0 - smoothstep(0.0, rim, yT - p.y)) * step(p.y, yT) + (1.0 - smoothstep(0.0, rim, p.y - yB)) * step(yB, p.y);
+    c.rgb *= 1.0 - 0.28 * edge * parted;
     c *= 1.0 - hole;
   }
   gl_FragColor = c;
@@ -341,30 +369,48 @@ export function paintCavity(o, rig, P, st, toPx, look = 'holo') {
   g.addColorStop(0, col.deep); g.addColorStop(1, col.inside);
   o.fillStyle = g; o.fill(path); o.clip(path);
   const tg = st.tongue || 0, gh = Math.max(1, lo[mid][1] - up[mid][1]);
-  o.fillStyle = col.tongue;
-  o.beginPath();
-  o.ellipse(lo[mid][0], lo[mid][1] - gh * (0.02 + 0.45 * tg), width * (0.3 - 0.06 * tg), gh * (0.3 + 0.15 * tg) + 1, 0, 0, Math.PI * 2);
-  o.fill();
-  if (!realTeeth) { // upper teeth, tucked up under the upper lip
-    const th = Math.min(gh * 0.42, width * 0.11) + pad;
-    const i0 = Math.round((n - 1) * 0.16), i1 = Math.round((n - 1) * 0.84);
-    o.beginPath();
-    o.moveTo(top[i0][0], top[i0][1]);
-    for (let i = i0 + 1; i <= i1; i++) o.lineTo(top[i][0], top[i][1]);
-    for (let i = i1; i >= i0; i--) { const s = Math.sin(((i - i0) / (i1 - i0)) * Math.PI); o.lineTo(top[i][0], top[i][1] + th * (0.5 + 0.5 * s)); }
-    o.closePath();
-    o.fillStyle = col.teeth; o.fill();
-    const tgr = o.createLinearGradient(0, up[mid][1], 0, up[mid][1] + gh * 0.42);
-    tgr.addColorStop(0, 'rgba(0,0,0,0.35)'); tgr.addColorStop(0.4, 'rgba(0,0,0,0)');
-    o.fillStyle = tgr; o.fill();
-    if (st.open > 0.42) { // lower teeth on big vowels
-      o.fillStyle = col.lowTeeth;
-      o.beginPath();
-      o.moveTo(bot[i0][0], bot[i0][1]);
-      for (let i = i0 + 1; i <= i1; i++) o.lineTo(bot[i][0], bot[i][1]);
-      for (let i = i1; i >= i0; i--) { const s = Math.sin(((i - i0) / (i1 - i0)) * Math.PI); o.lineTo(bot[i][0], bot[i][1] - (pad + gh * 0.16 * Math.min(1, (st.open - 0.42) * 3)) * s); }
-      o.closePath(); o.fill();
-    }
+  // Depth: darkest up under the top teeth and at the far corners, a little light toward the front.
+  const depth = o.createLinearGradient(0, up[mid][1], 0, lo[mid][1] + pad);
+  depth.addColorStop(0, 'rgba(0,0,0,0.4)'); depth.addColorStop(0.5, 'rgba(0,0,0,0.08)'); depth.addColorStop(1, 'rgba(0,0,0,0)');
+  o.fillStyle = depth; o.fill(path);
+  const sideL = o.createLinearGradient(up[0][0], 0, up[n - 1][0], 0);
+  sideL.addColorStop(0, 'rgba(0,0,0,0.5)'); sideL.addColorStop(0.22, 'rgba(0,0,0,0)'); sideL.addColorStop(0.78, 'rgba(0,0,0,0)'); sideL.addColorStop(1, 'rgba(0,0,0,0.5)');
+  o.fillStyle = sideL; o.fill(path);
+  // Tongue: low in the mouth, mostly behind the lower teeth; its tip lifts for l, t, d, n, th.
+  const tw = width * (0.34 - 0.06 * tg), ty = lo[mid][1] - gh * (0.08 + 0.42 * tg), th0 = gh * (0.32 + 0.12 * tg) + 1;
+  const tgrad = o.createRadialGradient(lo[mid][0], ty - th0 * 0.3, 0, lo[mid][0], ty, Math.max(tw, th0));
+  tgrad.addColorStop(0, col.tongue); tgrad.addColorStop(1, col.tongueDark || col.tongue);
+  o.fillStyle = tgrad;
+  o.beginPath(); o.ellipse(lo[mid][0], ty + th0 * 0.25, tw, th0, 0, 0, Math.PI * 2); o.fill();
+  if (!realTeeth) { // teeth, tucked up under the upper lip
+    const i0 = Math.round((n - 1) * 0.14), i1 = Math.round((n - 1) * 0.86);
+    const teethRow = (edge, sign, h, alpha) => { // a row of teeth hanging from (or standing on) a lip line
+      const shape = new Path2D();
+      shape.moveTo(edge[i0][0], edge[i0][1]);
+      for (let i = i0 + 1; i <= i1; i++) shape.lineTo(edge[i][0], edge[i][1]);
+      for (let i = i1; i >= i0; i--) {
+        const f = (i - i0) / (i1 - i0), s = Math.sin(f * Math.PI);
+        shape.lineTo(edge[i][0], edge[i][1] + sign * h * (0.35 + 0.65 * Math.pow(s, 0.6)));
+      }
+      shape.closePath();
+      o.save(); o.globalAlpha = alpha; o.fillStyle = col.teeth; o.fill(shape); o.clip(shape);
+      // shading: in the lip's shadow at the gum, darker toward the sides, a faint line between teeth
+      const sh = o.createLinearGradient(0, edge[mid][1], 0, edge[mid][1] + sign * h);
+      sh.addColorStop(0, 'rgba(40,20,15,0.45)'); sh.addColorStop(0.45, 'rgba(0,0,0,0)'); sh.addColorStop(1, sign > 0 ? 'rgba(90,80,70,0.18)' : 'rgba(0,0,0,0)');
+      o.fillStyle = sh; o.fill(shape);
+      const sd = o.createLinearGradient(edge[i0][0], 0, edge[i1][0], 0);
+      sd.addColorStop(0, 'rgba(30,15,10,0.55)'); sd.addColorStop(0.3, 'rgba(0,0,0,0)'); sd.addColorStop(0.7, 'rgba(0,0,0,0)'); sd.addColorStop(1, 'rgba(30,15,10,0.55)');
+      o.fillStyle = sd; o.fill(shape);
+      o.strokeStyle = 'rgba(80,60,50,0.22)'; o.lineWidth = Math.max(0.6, width * 0.006);
+      const cxm = edge[mid][0], tooth = width * 0.085;
+      for (const k of [-2.6, -1.7, -1, 0, 1, 1.7, 2.6]) { // central incisors widest, smaller toward the sides
+        const x = cxm + k * tooth; const yy = edge[mid][1];
+        o.beginPath(); o.moveTo(x, yy); o.lineTo(x, yy + sign * h); o.stroke();
+      }
+      o.restore();
+    };
+    teethRow(top, 1, Math.min(gh * 0.4, width * 0.11) + pad, 1);
+    if (st.open > 0.3) teethRow(bot, -1, (pad + gh * 0.14) * Math.min(1, (st.open - 0.3) * 3), 0.75);
   }
   o.restore();
 }
@@ -389,8 +435,8 @@ export function paintFvTeeth(o, rig, P, st, toPx, look = 'holo') {
 // cavity, upper and lower teeth, a tongue that lifts for l/t/d/n/th, and teeth
 // resting on the lower lip for f/v.
 const MOUTH_COLORS = {
-  holo: { deep: '#000305', inside: '#02121A', tongue: 'rgba(46, 128, 148, 0.6)', teeth: 'rgba(214, 250, 255, 0.82)', gaps: 'rgba(0, 30, 40, 0.35)', lowTeeth: 'rgba(214, 250, 255, 0.4)' },
-  real: { deep: '#1A0708', inside: '#4A1A1C', tongue: 'rgba(176, 78, 86, 0.85)', teeth: 'rgba(246, 241, 230, 0.95)', gaps: 'rgba(120, 100, 90, 0.35)', lowTeeth: 'rgba(236, 228, 214, 0.6)' },
+  holo: { deep: '#000305', inside: '#02121A', tongue: 'rgba(46, 128, 148, 0.6)', tongueDark: 'rgba(10, 50, 60, 0.6)', teeth: 'rgba(214, 250, 255, 0.82)', gaps: 'rgba(0, 30, 40, 0.35)', lowTeeth: 'rgba(214, 250, 255, 0.4)' },
+  real: { deep: '#240A0D', inside: '#4E1D1F', tongue: 'rgba(168, 72, 82, 0.9)', tongueDark: 'rgba(90, 30, 38, 0.9)', teeth: 'rgba(246, 241, 230, 0.95)', gaps: 'rgba(120, 100, 90, 0.35)', lowTeeth: 'rgba(236, 228, 214, 0.6)' },
 };
 export function paintMouth(o, rig, P, st, toPx, look = 'holo', drawPhoto = null) {
   const col = MOUTH_COLORS[look] || MOUTH_COLORS.holo;
