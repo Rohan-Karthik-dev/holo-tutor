@@ -1,0 +1,666 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#07090C">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon.svg">
+<title>Holo Tutor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body data-view="home" data-state="idle">
+<div id="phone">
+
+  <!-- HOME -->
+  <section id="v-mode" class="view">
+    <div class="scroll modescroll">
+      <header class="brandrow">
+        <svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><path d="M4 24 L26 6" stroke="#4FE3FF" stroke-width="2.4" stroke-linecap="round"></path><circle cx="15" cy="15" r="11" fill="none" stroke="#4FE3FF" stroke-width="1.6" opacity="0.5"></circle></svg>
+        <span class="wordmark">Holo Tutor</span>
+        <button id="acctChip" class="acctchip" type="button" aria-label="Your account"><span id="acctChipAv" class="av">👤</span><span id="acctChipName">Sign in</span></button>
+      </header>
+      <div class="greet">
+        <span id="modeGreet" class="muted">Hi there</span>
+        <h1>What are we doing today?</h1>
+      </div>
+      <button class="modecard fun" id="pickFun" type="button">
+        <span class="modeicon"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9h12a4 4 0 0 1 4 4v1a3 3 0 0 1-5.4 1.8L15 14H9l-1.6 1.8A3 3 0 0 1 2 14v-1a4 4 0 0 1 4-4z"></path><path d="M7 11v3M5.5 12.5h3"></path><circle cx="16" cy="11.5" r=".6" fill="currentColor"></circle><circle cx="18" cy="13" r=".6" fill="currentColor"></circle></svg></span>
+        <span class="modetext"><span class="modetitle">Fun chat</span><span class="modedesc">Movies, jokes and gaming. Riddles, trivia and recommendations.</span></span>
+        <span class="modego" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"></path></svg></span>
+      </button>
+      <button class="modecard study" id="pickStudy" type="button">
+        <span class="modeicon"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 8l10-5 10 5-10 5z"></path><path d="M6 10v5c0 1.7 2.7 3 6 3s6-1.3 6-3v-5"></path><path d="M22 8v6"></path></svg></span>
+        <span class="modetext"><span class="modetitle">Study</span><span class="modedesc">Lessons with a whiteboard, quizzes, videos and your progress.</span></span>
+        <span class="modego" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"></path></svg></span>
+      </button>
+      <button class="modecard twin" id="pickTwin" type="button">
+        <span class="modeicon"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="9" r="3.2"></circle><path d="M2.5 19c.8-3 3-4.6 5.5-4.6s4.7 1.6 5.5 4.6"></path><circle cx="16.5" cy="9" r="3.2" stroke-dasharray="2 2"></circle><path d="M14 14.6c.8-.2 1.6-.2 2.5-.2 2.5 0 4.7 1.6 5.5 4.6" stroke-dasharray="2 2"></path></svg></span>
+        <span class="modetext"><span class="modetitle">Train AI twin</span><span class="modedesc">Teach an AI to talk like you, then meet your hologram twin.</span></span>
+        <span class="modego" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"></path></svg></span>
+      </button>
+      <p class="small muted modehint">Switch anytime by saying “let's study”, “fun chat” or “train my twin”.</p>
+    </div>
+  </section>
+
+  <section id="v-home" class="view" hidden>
+    <div class="scroll">
+      <header class="brandrow">
+        <svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><path d="M4 24 L26 6" stroke="#4FE3FF" stroke-width="2.4" stroke-linecap="round"></path><circle cx="15" cy="15" r="11" fill="none" stroke="#4FE3FF" stroke-width="1.6" opacity="0.5"></circle></svg>
+        <span class="wordmark">Holo Tutor</span>
+        <button id="homeStreak" class="streakchip" data-go="progress" hidden><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3c1 4 5 5 5 10a5 5 0 0 1-10 0c0-2 1-3 2-4 0 2 1 3 2 3 0-3-1-5 1-9z"></path></svg><span id="homeStreakText">1-day streak</span></button>
+      </header>
+      <div class="greet">
+        <span id="greet" class="muted">Good evening</span>
+        <h1>Who should teach you today?</h1>
+      </div>
+      <button id="subjChip" class="subjchip" data-go="subject">
+        <span class="subjchip-icon" id="subjChipIcon" aria-hidden="true"></span>
+        <span class="subjchip-text"><span class="small muted">Learning</span><span id="subjChipText" class="strong">Anything · High school</span></span>
+        <span class="pill-outline small-pill">Change</span>
+      </button>
+      <section id="qotdHome" class="qotd" aria-label="Question of the day"></section>
+      <div class="cards" role="radiogroup" aria-label="Tutor style">
+        <button class="card" data-kind="globe" role="radio" aria-checked="true">
+          <span class="card-icon">
+            <svg width="48" height="48" viewBox="0 0 48 48" aria-hidden="true" class="icon-glow"><g fill="none" stroke="#4FE3FF" stroke-width="1.4"><circle cx="24" cy="24" r="19"></circle><ellipse cx="24" cy="24" rx="19" ry="4" opacity="0.6"></ellipse><ellipse cx="24" cy="15" rx="15" ry="3" opacity="0.5"></ellipse><ellipse cx="24" cy="33" rx="15" ry="3" opacity="0.5"></ellipse><ellipse class="spin" cx="24" cy="24" rx="19" ry="19"></ellipse><ellipse class="spin" cx="24" cy="24" rx="19" ry="19" style="animation-delay:-2.5s"></ellipse></g></svg>
+          </span>
+          <span class="card-text"><span class="card-title">Globe guide</span><span class="card-desc">A spinning world that maps ideas, places and data as you talk.</span></span>
+          <span class="radio" aria-hidden="true"></span>
+        </button>
+        <button class="card" data-kind="photo" role="radio" aria-checked="false">
+          <span class="card-icon">
+            <img id="cardPhoto" alt="" hidden>
+            <svg id="cardPhotoIcon" width="48" height="48" viewBox="0 0 48 48" aria-hidden="true" class="icon-glow"><g fill="none" stroke="#4FE3FF" stroke-width="1.6" stroke-linecap="round"><rect x="6" y="6" width="36" height="36" rx="9" stroke-dasharray="4 3"></rect><circle cx="24" cy="20" r="6.5"></circle><path d="M13 37 C 15 30, 33 30, 35 37"></path></g></svg>
+          </span>
+          <span class="card-text"><span class="card-title">Your face, as a tutor</span><span class="card-desc" id="photoDesc">Upload a photo — a parent, teacher or you — and it speaks back.</span></span>
+          <span class="radio" aria-hidden="true"></span>
+        </button>
+        <button class="card" data-kind="human" role="radio" aria-checked="false">
+          <span class="card-icon">
+            <svg width="48" height="48" viewBox="0 0 48 48" aria-hidden="true" class="icon-glow"><g fill="none" stroke="#4FE3FF" stroke-width="1.5" stroke-linecap="round"><ellipse cx="24" cy="18" rx="9" ry="11"></ellipse><path d="M15 15 H33 M15 21 H33" opacity="0.5"></path><path d="M21 29 L20 33 M27 29 L28 33 M20 33 C 14 35, 9 37, 8 44 M28 33 C 34 35, 39 37, 40 44"></path></g><circle cx="24" cy="40" r="2" fill="#FFFFFF"></circle></svg>
+          </span>
+          <span class="card-text"><span class="card-title">Holo human</span><span class="card-desc">Our wireframe tutor with live lip sync and expressions.</span></span>
+          <span class="radio" aria-hidden="true"></span>
+        </button>
+      </div>
+      <div class="boxcard">
+        <span class="boxcard-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#4FE3FF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 20h18M5 20 19 6M5 20V8"></path></svg></span>
+        <span class="boxcard-text"><span class="strong">Holo box</span><span class="small muted">45° pane · phone lies flat inside</span></span>
+        <button class="pill-outline" data-go="setup">Set up</button>
+      </div>
+      <button id="funCard" class="funrow" type="button">
+        <span class="boxcard-icon fun"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9h12a4 4 0 0 1 4 4v1a3 3 0 0 1-5.4 1.8L15 14H9l-1.6 1.8A3 3 0 0 1 2 14v-1a4 4 0 0 1 4-4z"></path></svg></span>
+        <span class="boxcard-text"><span class="strong">Need a break?</span><span class="small muted">Fun chat about movies, jokes and games</span></span>
+        <span class="pill-outline">Fun chat</span>
+      </button>
+      <button id="resumeCard" class="resume" hidden>
+        <span class="resume-text"><span class="small muted">Pick up where you left off</span><span id="resumeTopic" class="strong"></span><span id="resumeMeta" class="small muted"></span></span>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg>
+      </button>
+      <form id="keyBox" class="keybox" autocomplete="off" hidden>
+        <label for="keyInput" class="label">ANTHROPIC API KEY</label>
+        <div class="typerow"><input id="keyInput" type="password" placeholder="sk-ant-…"><button type="submit" class="pill">Save</button></div>
+        <span class="small muted">Kept only in this browser, never sent anywhere except Anthropic. Create one at console.anthropic.com.</span>
+      </form>
+      <p id="warn" class="warn" hidden></p>
+    </div>
+    <div class="foot">
+      <button id="homeCta" class="cta"><span id="homeCtaText">Start learning</span>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg>
+      </button>
+    </div>
+  </section>
+
+  <!-- UPLOAD FACE -->
+  <section id="v-photo" class="view" hidden>
+    <div class="scroll">
+      <div class="topbar">
+        <button class="round" data-go="home" aria-label="Back"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg></button>
+        <span class="step muted">Step 1 of 2</span>
+      </div>
+      <div class="greet">
+        <h1>Give your tutor a face</h1>
+        <p class="muted">One clear, front-facing photo. We turn it into a talking hologram.</p>
+      </div>
+      <div class="drop" id="drop">
+        <label class="drop-empty" id="dropEmpty">
+          <svg width="120" height="150" viewBox="0 0 120 150" aria-hidden="true" class="icon-glow"><g fill="none" stroke="#4FE3FF" stroke-width="2" stroke-linecap="round" stroke-dasharray="7 6"><ellipse cx="60" cy="58" rx="36" ry="46"></ellipse><path d="M30 150 C 34 120, 86 120, 90 150"></path></g></svg>
+          <span class="choose"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4M6 10l6-6 6 6M4 20h16"></path></svg>Choose a photo</span>
+          <input id="faceFile" type="file" accept="image/*" class="sr-only">
+        </label>
+        <canvas id="facePrev" hidden aria-label="Your photo as a hologram. Tap the mouth to adjust the lips."></canvas>
+        <span id="mouthDot" class="lipmark" hidden></span>
+        <span id="eyeMark0" class="eyemark" hidden></span>
+        <span id="eyeMark1" class="eyemark" hidden></span>
+      </div>
+      <div id="faceTools" class="facetools" hidden>
+        <span id="lipStatus" class="small muted" aria-live="polite">Tap the middle of the mouth so the lips move in the right place.</span>
+        <div class="row">
+          <button id="testVoice" class="pill-outline" type="button">Test voice</button>
+          <label class="pill-outline">Change photo<input id="faceFile2" type="file" accept="image/*" class="sr-only"></label>
+        </div>
+      </div>
+      <div class="field">
+        <span class="label">FRAMING</span>
+        <div class="seg3 seg2" role="radiogroup" aria-label="Framing" id="frameSeg">
+          <button role="radio" data-frame="face">Face only</button>
+          <button role="radio" data-frame="head">Head &amp; shoulders</button>
+        </div>
+      </div>
+      <div class="field">
+        <span class="label">LOOK</span>
+        <div class="seg3 seg2" role="radiogroup" aria-label="Look" id="lookSeg">
+          <button role="radio" data-look="real">Real person</button>
+          <button role="radio" data-look="holo">Hologram tint</button>
+        </div>
+      </div>
+      <ul class="tips">
+        <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7CFFB2" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"></path></svg>Face the camera, eyes visible</li>
+        <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7CFFB2" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"></path></svg>Soft, even light — no harsh shadows</li>
+        <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7CFFB2" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"></path></svg>Plain background works best</li>
+      </ul>
+      <div class="field">
+        <span class="label">VOICE</span>
+        <div class="seg3" role="radiogroup" aria-label="Voice" id="voiceSeg">
+          <button role="radio" data-voice="Warm">Warm</button>
+          <button role="radio" data-voice="Clear">Clear</button>
+          <button role="radio" data-voice="Lively">Lively</button>
+        </div>
+      </div>
+    </div>
+    <div class="foot">
+      <button id="photoCta" class="cta" disabled>Create my holo tutor</button>
+    </div>
+  </section>
+
+  <!-- SESSION -->
+  <section id="v-session" class="view" hidden>
+    <div class="sess">
+      <div class="sesshead">
+        <button class="round" id="sessBack" aria-label="Back"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg></button>
+        <div class="sesstitle">
+          <span id="tutorName" class="strong lg">Globe guide</span>
+          <span id="liveState" class="livestate"><span class="dot"></span><span id="liveStateText">Ready</span></span>
+        </div>
+        <button class="trophy" id="funTrophy" type="button" aria-label="Your fun progress"><span aria-hidden="true">🏆</span><span id="trophyLv">Lv 1</span></button>
+        <button class="pill" data-go="setup">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 20h18M5 20 19 6M5 20V8"></path></svg>
+          Holo mode
+        </button>
+      </div>
+      <div class="stage">
+        <canvas id="sessCanvas"></canvas>
+        <video id="cam" playsinline muted hidden></video>
+        <div id="countdown" aria-live="polite"></div>
+      </div>
+      <section id="board" class="board" hidden aria-label="Whiteboard">
+        <div class="boardhead">
+          <span class="boardlabel" id="boardLabel">WHITEBOARD</span>
+          <span id="boardTopic" class="boardtopic"></span>
+          <button id="videoBtn" class="pill-sm" type="button">Videos</button>
+          <button id="quizBtn" class="pill-sm" type="button">Quiz me</button>
+        </div>
+        <div id="boardLines" class="boardlines"></div>
+      </section>
+      <div id="chat" class="chat" aria-live="polite"></div>
+      <div id="nextChips" class="nextchips" hidden></div>
+      <form id="typeRow" class="typerow" autocomplete="off" hidden>
+        <input id="typeInput" type="text" placeholder="Type a question…" aria-label="Type a question">
+        <button type="submit" class="send" aria-label="Send"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></button>
+      </form>
+      <div class="voicedeck" id="voiceDeck">
+        <div id="voiceAlert" class="voicealert" role="alert" hidden><span id="voiceAlertText"></span><button id="voiceAlertBtn" class="pill-sm" type="button">Type instead</button><button id="voiceAlertX" class="vax" type="button" aria-label="Dismiss">×</button></div>
+        <div class="vdtop">
+          <span class="vdstate" id="vdState"><i></i><span id="vdStateText">Ready</span></span>
+          <canvas id="voiceWave" class="voicewave" aria-hidden="true"></canvas>
+          <span id="status" class="status" aria-live="polite">Ask anything — just speak</span>
+        </div>
+        <div class="micbar">
+          <label class="iconbtn" aria-label="Share a photo of your work" title="Share a photo">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"></path><circle cx="12" cy="13" r="3.5"></circle></svg>
+            <input id="workFile" type="file" accept="image/*" class="sr-only">
+          </label>
+          <button id="replayBtn" class="iconbtn" type="button" aria-label="Replay the last answer" title="Replay">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"></path><path d="M3 3v5h5"></path></svg>
+          </button>
+          <button id="stopBtn" class="iconbtn stopbtn" type="button" aria-label="Stop speaking" title="Stop" disabled>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2.5"></rect></svg>
+          </button>
+          <div class="micwrap">
+            <span class="ring"></span><span class="ring r2"></span>
+            <button id="micBtn" class="mic" type="button" aria-label="Pause listening" aria-pressed="true">
+              <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"></rect><path d="M5 11a7 7 0 0 0 14 0M12 18v3"></path></svg>
+            </button>
+          </div>
+          <button id="muteBtn" class="iconbtn" type="button" aria-label="Mute the tutor's voice" aria-pressed="false" title="Mute">
+            <svg id="muteIcon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z"></path><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"></path></svg>
+          </button>
+          <button id="kbBtn" class="iconbtn" type="button" aria-label="Type instead" title="Type instead">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="18" height="12" rx="2"></rect><path d="M7 10h.01M11 10h.01M15 10h.01M7 14h10"></path></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- HOLO BOX SETUP -->
+  <section id="v-setup" class="view" hidden>
+    <div class="scroll">
+      <div class="topbar">
+        <button class="round" id="setupBack" aria-label="Back"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg></button>
+      </div>
+      <div class="greet">
+        <h1>Set up your holo box</h1>
+        <p class="muted">Lay the phone flat, screen up, under the 45° pane. Dim the room.</p>
+      </div>
+      <div class="diagram">
+        <svg width="320" height="150" viewBox="0 0 320 150" role="img" aria-label="Side view: phone flat at the bottom, glass pane at 45 degrees above it, the hologram appears behind the pane to the viewer's eye">
+          <rect x="70" y="20" width="170" height="112" rx="6" fill="none" stroke="#2A3A44" stroke-width="1.5"></rect>
+          <rect x="96" y="120" width="120" height="8" rx="3" fill="#4FE3FF"></rect>
+          <path d="M90 118 L 222 24" stroke="#CFF6FF" stroke-width="2.5" stroke-linecap="round"></path>
+          <path d="M150 118 L150 76 L 24 76" fill="none" stroke="#4FE3FF" stroke-width="1.5" stroke-dasharray="4 4"></path>
+          <circle cx="18" cy="76" r="6" fill="none" stroke="#EAF2F5" stroke-width="1.8"></circle>
+          <circle cx="18" cy="76" r="2" fill="#EAF2F5"></circle>
+          <circle cx="196" cy="76" r="14" fill="none" stroke="#4FE3FF" stroke-width="1.5" stroke-dasharray="3 3" opacity="0.8"></circle>
+          <text x="228" y="148" fill="#8A9AA5" font-size="11" font-family="Inter, sans-serif">phone</text>
+          <text x="226" y="22" fill="#8A9AA5" font-size="11" font-family="Inter, sans-serif">45° pane</text>
+          <text x="250" y="80" fill="#8A9AA5" font-size="11" font-family="Inter, sans-serif">hologram</text>
+        </svg>
+      </div>
+      <div class="field">
+        <span class="label">IMAGE ORIENTATION</span>
+        <div class="seg4" role="radiogroup" aria-label="Image orientation" id="orientSeg">
+          <button role="radio" data-orient="Normal">Normal</button>
+          <button role="radio" data-orient="Mirror">Mirror</button>
+          <button role="radio" data-orient="Flip">Flip</button>
+          <button role="radio" data-orient="180°">180°</button>
+        </div>
+        <span class="small muted">If the tutor looks backwards or upside-down in the glass, switch here — or say “flip”.</span>
+      </div>
+      <div class="field">
+        <div class="labelrow"><label for="bright" class="label">GLOW BRIGHTNESS</label><span id="brightVal" class="small strong cyanish">90%</span></div>
+        <input id="bright" type="range" min="40" max="100" value="90">
+      </div>
+      <div class="switches">
+        <div class="switchrow">
+          <span class="switchtext"><span class="strong">Voice only</span><span class="small muted">No screen touch while in the box</span></span>
+          <button id="swVoice" class="switch" role="switch" aria-checked="true" aria-label="Voice only"><span></span></button>
+        </div>
+        <div class="switchrow">
+          <span class="switchtext"><span class="strong">Keep screen awake</span><span class="small muted">Max brightness, no auto-lock</span></span>
+          <button id="swAwake" class="switch" role="switch" aria-checked="true" aria-label="Keep screen awake"><span></span></button>
+        </div>
+        <div class="switchrow">
+          <span class="switchtext"><span class="strong">Showcase mode</span><span class="small muted">For exhibitions: when nobody is talking, the tutor invites people over and shares fun facts</span></span>
+          <button id="swShowcase" class="switch" role="switch" aria-checked="false" aria-label="Showcase mode"><span></span></button>
+        </div>
+      </div>
+    </div>
+    <div class="foot">
+      <button id="enterHolo" class="cta">Enter holo mode</button>
+    </div>
+  </section>
+
+  <!-- SUBJECT & LEVEL -->
+  <section id="v-subject" class="view" hidden>
+    <div class="scroll">
+      <div class="topbar"><button class="round" id="subjBack" aria-label="Back"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg></button></div>
+      <div class="greet">
+        <h1>What are we learning?</h1>
+        <p class="muted">Your tutor teaches at this level and keeps track of the topics you cover.</p>
+      </div>
+      <div id="subjGrid" class="subjgrid" role="radiogroup" aria-label="Subject"></div>
+      <div class="field"><span class="label">LEVEL</span><div id="levelSeg" class="seg4" role="radiogroup" aria-label="Level"></div></div>
+    </div>
+    <div class="foot"><button id="subjDone" class="cta">Continue</button></div>
+  </section>
+
+  <!-- QUIZ -->
+  <section id="v-quiz" class="view" hidden>
+    <div class="sess">
+      <div class="sesshead">
+        <button class="round" id="quizBack" aria-label="Leave the quiz"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg></button>
+        <div class="sesstitle">
+          <span id="quizTitle" class="strong lg">Quiz</span>
+          <span class="livestate"><span class="dot"></span><span id="quizState">Getting ready</span></span>
+        </div>
+        <span id="quizCount" class="qcount"></span>
+      </div>
+      <div id="quizProg" class="qprog" aria-hidden="true"></div>
+      <div class="stage small"><canvas id="quizCanvas"></canvas></div>
+      <div id="quizLoading" class="quizloading"><span class="spinner" aria-hidden="true"></span><span id="quizLoadingText">Writing your quiz…</span></div>
+      <div id="quizQ" class="quizq" hidden>
+        <p id="qText" class="qtext"></p>
+        <div id="qOpts" class="qopts"></div>
+        <p id="qFeedback" class="qfeedback" aria-live="polite"></p>
+      </div>
+      <div id="quizDone" class="quizdone" hidden>
+        <div class="scorering">
+          <svg viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="60" r="52" class="track"></circle><circle id="scoreArc" cx="60" cy="60" r="52" class="arc"></circle></svg>
+          <span id="scoreText" class="scoretext"></span>
+        </div>
+        <h2 id="scoreTitle" class="scoretitle"></h2>
+        <ul id="quizReview" class="review"></ul>
+        <p id="quizWeak" class="weakcallout" hidden></p>
+        <div class="row2"><button id="quizAgain" class="btn-outline" type="button">Try again</button><button id="quizBackLesson" class="cta" type="button">Back to lesson</button></div>
+      </div>
+      <div id="quizBar" class="quizbar">
+        <button id="qHint" class="pill-outline" type="button">Hint</button>
+        <span id="qStatus" class="status">Say A, B, C or D — or tap</span>
+        <button id="qSkip" class="pill-outline" type="button">Skip</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- HISTORY -->
+  <section id="v-history" class="view" hidden>
+    <div class="scroll">
+      <div class="greet">
+        <h1>Lesson history</h1>
+        <p class="muted">Every lesson gets a short recap you can replay.</p>
+      </div>
+      <div id="histList" class="histlist"></div>
+    </div>
+  </section>
+
+  <!-- LESSON RECAP -->
+  <section id="v-recap" class="view" hidden>
+    <div class="scroll">
+      <div class="topbar"><button class="round" data-go="history" aria-label="Back"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg></button></div>
+      <div class="greet">
+        <h1 id="rcTitle"></h1>
+        <span id="rcMeta" class="small muted"></span>
+      </div>
+      <div class="stage recapstage">
+        <canvas id="recapCanvas"></canvas>
+        <button id="rcPlay" class="playbtn" type="button" aria-label="Replay recap">
+          <svg id="rcPlayIcon" width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"></path></svg>
+          <span id="rcPlayText">Replay recap</span>
+        </button>
+      </div>
+      <div class="field"><span class="label">RECAP</span><p id="rcSummary" class="rcsummary"></p></div>
+      <div class="field" id="rcPointsWrap"><span class="label">KEY POINTS</span><ul id="rcPoints" class="points"></ul></div>
+      <div class="field" id="rcVideosWrap" hidden><span class="label">VIDEOS</span><div id="rcVideos" class="vcards"></div></div>
+      <div class="field" id="rcBoardWrap"><span class="label">ON THE BOARD</span><div id="rcBoard" class="boardlines mini"></div></div>
+      <details class="transcript"><summary>Full conversation</summary><div id="rcTranscript" class="rctranscript"></div></details>
+      <p id="rcNext" class="small muted"></p>
+    </div>
+    <div class="foot row2"><button id="rcQuiz" class="btn-outline" type="button">Quiz me on this</button><button id="rcContinue" class="cta" type="button">Continue topic</button></div>
+  </section>
+
+  <!-- PROGRESS -->
+  <section id="v-progress" class="view" hidden>
+    <div class="scroll">
+      <div class="greet proghead">
+        <button class="round" id="progBack" type="button" aria-label="Back to fun chat" hidden><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg></button>
+        <h1 id="progTitle">Your progress</h1>
+      </div>
+      <div class="progseg" role="tablist" id="progSeg" aria-label="Progress type">
+        <button role="tab" type="button" data-p="study">📚 Study</button>
+        <button role="tab" type="button" data-p="fun">🎉 Fun</button>
+      </div>
+      <div id="funProg" class="funprog" hidden>
+        <div class="lvcard">
+          <div class="lvring">
+            <svg viewBox="0 0 120 120" aria-hidden="true"><defs><linearGradient id="lvGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFB547"></stop><stop offset="1" stop-color="#FF6B9A"></stop></linearGradient></defs><circle class="lvtrack" cx="60" cy="60" r="52"></circle><circle id="lvArc" class="lvarc" cx="60" cy="60" r="52"></circle></svg>
+            <div class="lvnum"><span>LEVEL</span><b id="lvNum">1</b></div>
+          </div>
+          <div class="lvtext">
+            <span id="lvTitle" class="lvtitle">Newbie</span>
+            <span id="lvXp" class="lvxp">0 XP</span>
+            <div class="xpbar"><i id="xpFill"></i></div>
+            <span id="lvNext" class="small muted">120 XP to level 2</span>
+          </div>
+        </div>
+        <section id="qotdFun" class="qotd fun" aria-label="Question of the day"></section>
+        <div class="flamecard">
+          <span class="flame" id="funFlame" aria-hidden="true">🔥</span>
+          <span class="flametext"><b id="funStreak">0</b><span id="funStreakSub" class="small">day fun streak</span></span>
+          <div id="funWeek" class="weekdots funweek"></div>
+        </div>
+        <div class="funstats">
+          <div class="ftile"><span class="fe">💬</span><b id="fsMsgs">0</b><span>messages</span></div>
+          <div class="ftile"><span class="fe">😂</span><b id="fsJokes">0</b><span>jokes</span></div>
+          <div class="ftile"><span class="fe">🧠</span><b id="fsTrivia">0</b><span>trivia right</span></div>
+          <div class="ftile"><span class="fe">🏅</span><b id="fsBest">–</b><span>best trivia</span></div>
+        </div>
+        <div class="field"><span class="label">YOUR FUN MIX</span><div id="funMix" class="funmix"></div></div>
+        <div class="field"><span class="label">BADGES <span id="badgeCount" class="badgecount"></span></span><div id="badgeGrid" class="badgegrid"></div></div>
+        <div class="field" id="funRecentBox"><span class="label">RECENTLY CHATTED</span><div id="funRecent" class="funchips"></div></div>
+        <div class="funactions">
+          <button id="funTriviaBtn" class="funbtn" type="button">🧠 Play trivia</button>
+          <button id="funChatBtn" class="funbtn ghost" type="button">💬 Fun chat</button>
+        </div>
+      </div>
+      <div id="studyProg">
+      <div class="streak">
+        <div class="streaktop">
+          <span class="streakicon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3c1 4 5 5 5 10a5 5 0 0 1-10 0c0-2 1-3 2-4 0 2 1 3 2 3 0-3-1-5 1-9z"></path></svg></span>
+          <span class="streaktext"><span id="streakNum" class="streaknum">0</span><span class="small muted" id="streakSub">day streak</span></span>
+        </div>
+        <div id="weekDots" class="weekdots"></div>
+      </div>
+      <div class="stats">
+        <div class="stat"><span id="stLessons" class="statnum">0</span><span class="small muted">Lessons</span></div>
+        <div class="stat"><span id="stQuestions" class="statnum">0</span><span class="small muted">Questions asked</span></div>
+        <div class="stat"><span id="stAcc" class="statnum">–</span><span class="small muted">Quiz accuracy</span></div>
+      </div>
+      <div class="field"><span class="label">SUBJECTS</span><div id="subjBars" class="subjbars"></div></div>
+      <div class="field"><span class="label">WEAK SPOTS</span><div id="weakList" class="weaklist"></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TRAIN AI TWIN -->
+  <section id="v-train" class="view" hidden>
+    <div class="scroll trainscroll">
+      <div class="topbar">
+        <button class="round" id="trainBack" aria-label="Back"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg></button>
+        <span class="strong lg">Train your AI twin</span>
+      </div>
+      <!-- first time: who is this twin of, and permission -->
+      <div id="twinConsent" class="twinconsent" hidden>
+        <div class="twinhero"><span class="twinorb" aria-hidden="true">🧬</span><h1>Make an AI that talks like you</h1>
+          <p class="muted">Answer a few questions out loud, add facts and things you've written. Your twin learns your words, humour and opinions, then talks as you, as a hologram with your face.</p></div>
+        <label class="afield"><span>Twin of</span><input id="twinNameIn" maxlength="40" placeholder="Your name"></label>
+        <label class="consentrow"><input id="twinOk" type="checkbox"><span>This twin is of <b>me</b>, or of someone who has said yes to it. I'll only teach it things I'm happy for it to repeat.</span></label>
+        <p id="twinConsentErr" class="autherr" hidden></p>
+        <button id="twinStart" class="cta" type="button">Start training</button>
+      </div>
+      <div id="twinMain" class="twinmain" hidden>
+        <div class="twincard">
+          <div class="twinring"><svg viewBox="0 0 120 120" aria-hidden="true"><defs><linearGradient id="twGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#B79CFF"></stop><stop offset="1" stop-color="#4FE3FF"></stop></linearGradient></defs><circle class="lvtrack" cx="60" cy="60" r="52"></circle><circle id="twArc" class="twarc" cx="60" cy="60" r="52"></circle></svg>
+            <div class="twface" id="twFace">🧑‍🚀</div></div>
+          <div class="twintext"><span class="small muted">AI TWIN OF</span><span id="twName" class="twname">You</span><span id="twStage" class="twstage">Just met you</span><span id="twPct" class="twpct">0% trained</span></div>
+        </div>
+        <div id="twCats" class="twcats"></div>
+        <section class="interview" aria-label="Interview">
+          <div class="ivhead"><span class="label">INTERVIEW</span><span id="ivCat" class="ivcat"></span></div>
+          <p id="ivQ" class="ivq">…</p>
+          <p id="ivStatus" class="small muted ivstatus">Answer out loud. Say “skip” for another question.</p>
+          <form id="ivForm" class="typerow ivform" autocomplete="off"><input id="ivInput" placeholder="…or type your answer" aria-label="Your answer"><button type="submit" class="send" aria-label="Save answer"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></button></form>
+          <div class="ivbtns"><button id="ivSkip" class="pill-outline" type="button">Skip</button><button id="ivMic" class="pill-outline" type="button">🎙️ Listening</button></div>
+        </section>
+        <div class="field"><span class="label">ADD A FACT ABOUT YOU</span>
+          <form id="noteForm" class="typerow" autocomplete="off"><input id="noteInput" maxlength="300" placeholder="e.g. I always say “super” when I'm happy"><button type="submit" class="send" aria-label="Add fact">＋</button></form>
+          <div id="noteList" class="notelist"></div></div>
+        <div class="field"><span class="label">SOMETHING YOU'VE WRITTEN</span>
+          <textarea id="sampleInput" class="sampletext" rows="4" maxlength="3000" placeholder="Paste a message, a post or a short essay you wrote. Your twin learns your style from it."></textarea>
+          <div class="row"><button id="sampleAdd" class="pill-outline" type="button">Add writing sample</button><span id="sampleCount" class="small muted"></span></div></div>
+        <div class="field"><span class="label">YOUR TWIN PROFILE</span><div id="twProfile" class="twprofile"></div>
+          <div class="row"><button id="twBuild" class="pill-outline" type="button">✨ Update my twin</button></div></div>
+        <button id="twTalk" class="cta twtalk" type="button">💬 Talk to my twin</button>
+        <button id="twReset" class="guestbtn danger" type="button">Delete my twin</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- SIGN IN / CREATE ACCOUNT -->
+  <section id="v-auth" class="view" hidden>
+    <div class="scroll authscroll">
+      <div class="authhero">
+        <div class="authorb" aria-hidden="true"><span></span><span></span><span></span></div>
+        <h1 id="authTitle">Welcome to Holo Tutor</h1>
+        <p id="authSub" class="muted">Sign in to keep your progress, badges and lessons.</p>
+      </div>
+      <div id="authSeg" class="authseg" role="tablist" aria-label="Sign in or create an account">
+        <button role="tab" type="button" data-auth="signin">Sign in</button>
+        <button role="tab" type="button" data-auth="signup">Create account</button>
+      </div>
+      <!-- learner profiles on this device (standalone / preview) -->
+      <div id="profilePick" class="profilepick" hidden>
+        <div id="profileGrid" class="profilegrid"></div>
+      </div>
+      <form id="authForm" class="authform" autocomplete="on" novalidate>
+        <div id="avatarRow" class="avatarrow" role="radiogroup" aria-label="Pick an avatar"></div>
+        <label class="afield" id="fName"><span>Your name</span><input id="aName" name="name" autocomplete="nickname" maxlength="40" placeholder="e.g. Aarav"></label>
+        <label class="afield" id="fEmail"><span>Email</span><input id="aEmail" name="email" type="email" autocomplete="email" inputmode="email" maxlength="254" placeholder="you@example.com"></label>
+        <label class="afield" id="fPass"><span>Password</span>
+          <span class="pwrow"><input id="aPass" name="password" type="password" autocomplete="current-password" maxlength="200" placeholder="At least 8 characters"><button type="button" id="pwToggle" class="pwtoggle" aria-label="Show password">Show</button></span>
+        </label>
+        <label class="afield" id="fPin"><span id="pinLabel">4-digit PIN <em>(optional)</em></span><input id="aPin" name="pin" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off" placeholder="••••"></label>
+        <p id="authErr" class="autherr" role="alert" hidden></p>
+        <button id="authGo" class="cta" type="submit"><span id="authGoText">Sign in</span></button>
+        <p id="authNote" class="small muted authnote"></p>
+      </form>
+      <button id="authGuest" class="guestbtn" type="button">Continue as guest</button>
+    </div>
+  </section>
+
+  <!-- SETTINGS -->
+  <section id="v-settings" class="view" hidden>
+    <div class="scroll">
+      <div class="greet"><h1>Settings</h1></div>
+      <div id="acctCard" class="acctcard">
+        <span id="acctAv" class="acctav">👤</span>
+        <span class="accttext"><span id="acctName" class="strong">Guest</span><span id="acctSub" class="small muted">Not signed in</span></span>
+        <span class="acctbtns"><button id="acctEdit" class="pill-outline" type="button" hidden>Edit</button><button id="acctAction" class="pill" type="button">Sign in</button></span>
+      </div>
+      <div class="field">
+        <span class="label">VOICE</span>
+        <div class="seg3" role="radiogroup" aria-label="Voice" id="setVoiceSeg">
+          <button role="radio" data-voice="Warm">Warm</button>
+          <button role="radio" data-voice="Clear">Clear</button>
+          <button role="radio" data-voice="Lively">Lively</button>
+        </div>
+      </div>
+      <div class="field">
+        <label for="voicePick" class="label">VOICE ON THIS DEVICE</label>
+        <select id="voicePick" class="select"></select>
+        <p id="voicePickNote" class="small muted"></p>
+      </div>
+      <div class="field">
+        <span class="label">VOICE ENGINE</span>
+        <div class="seg3" role="radiogroup" aria-label="Voice engine" id="engineSeg">
+          <button role="radio" data-engine="auto">Auto</button>
+          <button role="radio" data-engine="device">Built-in</button>
+          <button role="radio" data-engine="cloud">Cloud</button>
+        </div>
+        <p id="voiceStatus" class="small muted voicestatus"></p>
+        <div class="row"><button id="testVoiceBtn" class="pill-outline" type="button">Test voice</button></div>
+        <form id="ttsKeyBox" class="keybox" autocomplete="off" hidden>
+          <label for="ttsKeyInput" class="label">GOOGLE VOICE KEY (OPTIONAL)</label>
+          <div class="typerow"><input id="ttsKeyInput" type="password" placeholder="Google Cloud Text-to-Speech API key"><button type="submit" class="pill">Save</button></div>
+          <span class="small muted">Gives a natural voice in English, Hindi and Telugu on any phone. Kept only on this device.</span>
+        </form>
+      </div>
+      <div class="field">
+        <div class="labelrow"><label for="rateRange" class="label">SPEAKING SPEED</label><span id="rateVal" class="small strong cyanish">1.0×</span></div>
+        <input id="rateRange" class="range" type="range" min="0.7" max="1.4" step="0.05" value="1">
+      </div>
+      <div class="switches">
+        <div class="switchrow">
+          <span class="switchtext"><span class="strong">Talk over the tutor</span><span class="small muted">Keep listening while it speaks, so you can cut in</span></span>
+          <button id="swBarge" class="switch" role="switch" aria-checked="true" aria-label="Talk over the tutor"><span></span></button>
+        </div>
+        <div class="switchrow">
+          <span class="switchtext"><span class="strong">Wake word · “Hey Tutor”</span><span class="small muted">Only answer after the wake word. Good for busy rooms</span></span>
+          <button id="swWake" class="switch" role="switch" aria-checked="false" aria-label="Wake word"><span></span></button>
+        </div>
+      </div>
+      <div class="switches">
+        <div class="switchrow">
+          <span class="switchtext"><span class="strong">Admin console</span><span class="small muted">Testing panel: type as the student in any screen, including holo mode</span></span>
+          <button id="swAdmin" class="switch" role="switch" aria-checked="true" aria-label="Admin console"><span></span></button>
+        </div>
+      </div>
+      <div class="setrow"><span class="switchtext"><span class="strong">Holo box</span><span class="small muted">Orientation, glow and screen</span></span><button class="pill-outline" data-go="setup">Set up</button></div>
+      <div class="setrow"><span class="switchtext"><span class="strong">Tutor face</span><span class="small muted">Change the photo or the lips</span></span><button class="pill-outline" data-go="photo">Edit</button></div>
+      <button id="clearData" class="dangerbtn" type="button">Clear history &amp; progress</button>
+      <p class="small muted">Lessons, progress and your tutor's face are stored only on this device.</p>
+    </div>
+  </section>
+
+  <!-- HOLO MODE -->
+  <section id="v-live" class="view live" hidden>
+    <div id="liveWrap" class="livewrap"><canvas id="liveFx" class="livefx" aria-hidden="true"></canvas><div id="liveInvite" class="liveinvite" hidden aria-hidden="true"></div><div id="liveMedia" class="livemedia" hidden></div><canvas id="liveCanvas"></canvas><div id="liveBoard" class="liveboard" aria-hidden="true"></div><div class="livevoice" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div></div>
+    <button id="liveExit" class="liveexit" aria-label="Exit holo mode"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg></button>
+  </section>
+  <div id="player" class="player" hidden role="dialog" aria-modal="true" aria-labelledby="playerTitle">
+    <div class="playerbox">
+      <div class="playerhead">
+        <span id="playerTitle" class="playertitle"></span>
+        <button id="playerClose" class="round" type="button" aria-label="Close video"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg></button>
+      </div>
+      <div id="playerFrame" class="playerframe"></div>
+      <div class="playerfoot"><span id="playerMeta" class="small muted"></span><a id="playerOpen" class="pill-outline" target="_blank" rel="noopener">Open on YouTube</a></div>
+      <p class="small muted">Say “close video” when you're done, then ask me anything about it.</p>
+    </div>
+  </div>
+
+  <!-- ADMIN CONSOLE (testing) — not mirrored, works in every screen including holo mode -->
+  <button id="adminBtn" class="adminbtn" type="button" aria-label="Open admin console" title="Admin console (Shift+D)">ADM</button>
+  <section id="admin" class="admin" hidden aria-label="Admin console">
+    <div class="admhead">
+      <span class="admtitle">Admin console</span>
+      <span id="admState" class="admstate">home · idle</span>
+      <button id="admClose" class="round admround" type="button" aria-label="Close admin console"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg></button>
+    </div>
+    <form id="admForm" class="admform" autocomplete="off">
+      <input id="admInput" type="text" placeholder="Type as the student — works in holo mode" aria-label="Type as the student">
+      <button type="submit" class="pill">Send</button>
+    </form>
+    <div class="admquick">
+      <button type="button" data-adm="fun">Fun chat</button>
+      <button type="button" data-adm="study">Study</button>
+      <button type="button" data-adm="holo">Holo mode</button>
+      <button type="button" data-adm="screen">Screen</button>
+      <button type="button" data-adm="quiz">Quiz me</button>
+      <button type="button" data-adm="video">Video</button>
+      <button type="button" data-adm="picture">Picture</button>
+      <button type="button" data-adm="score">My score</button>
+      <button type="button" data-adm="invite">Invite now</button>
+      <button type="button" data-adm="face">Show face</button>
+      <button type="button" data-adm="board">Show board</button>
+      <button type="button" data-adm="flip">Flip</button>
+      <button type="button" data-adm="repeat">Repeat</button>
+      <button type="button" data-adm="stop">Stop talking</button>
+      <button type="button" data-adm="mic" id="admMic">Mic: on</button>
+      <button type="button" data-adm="start">Start screen</button>
+    </div>
+    <form id="admKey" class="admform" autocomplete="off" hidden>
+      <input id="admKeyInput" type="password" placeholder="Anthropic API key (sk-ant-…)" aria-label="Anthropic API key">
+      <button type="submit" class="pill">Save key</button>
+    </form>
+    <div id="admLog" class="admlog" aria-live="polite"></div>
+    <p class="admfoot">Toggle with Shift+D or the ADM button. Turn it off in Settings when you're done testing.</p>
+  </section>
+
+  <div id="funToast" class="funtoast" hidden aria-live="polite"></div>
+  <nav id="tabs" class="tabs" aria-label="Main">
+    <button data-go="home" data-tab="home"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11 12 4l9 7v9H3z"></path></svg><span>Home</span></button>
+    <button data-go="history" data-tab="history"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"></path></svg><span>History</span></button>
+    <button data-go="progress" data-tab="progress"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"></path></svg><span>Progress</span></button>
+    <button data-go="settings" data-tab="settings"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"></path></svg><span>Settings</span></button>
+  </nav>
+</div>
+<script type="module" src="app.js"></script>
+</body>
+</html>

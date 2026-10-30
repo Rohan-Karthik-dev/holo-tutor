@@ -1,0 +1,15 @@
+{
+  "name": "holo-tutor",
+  "version": "0.1.0",
+  "description": "Holographic AI tutor for a 45° Pepper's ghost holo box — Phase 1: speech-to-speech, photo tutoring, talking face.",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18.17"
+  },
+  "license": "UNLICENSED",
+  "private": true
+}
