@@ -1,6 +1,6 @@
 {
   "name": "holo-tutor-mobile",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "description": "Holo Tutor as an Android app (Capacitor), with Android's own speech recognition and text-to-speech.",
   "scripts": {
