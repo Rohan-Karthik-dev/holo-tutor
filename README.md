@@ -54,6 +54,8 @@ cd android && ./gradlew assembleDebug    # or open mobile/android in Android Stu
 ```
 The APK is `mobile/android/app/build/outputs/apk/debug/app-debug.apk`. It's signed with `mobile/android/holo-tutor-debug.keystore` so new builds install over old ones; that key is for sideloading only; make a private release key before publishing to the Play Store.
 
+**Built-in key (private demo builds only):** add a repository secret named `ANTHROPIC_API_KEY` (Settings → Secrets and variables → Actions). The workflow then builds the key into the app (no pasting) and publishes that APK only as a **private draft release**, visible to the repo's maintainers; no public release or artifact is made. Anyone who gets the APK file can extract the key, so use a separate key with a low spending limit, don't share the file, and disable the key after the demo. Delete the secret to go back to public, key-less builds.
+
 **Install on a phone:** copy or download the APK to the phone, open it, and allow "Install unknown apps" when Android asks.
 
 ## Free speech-to-speech (browser voice console)

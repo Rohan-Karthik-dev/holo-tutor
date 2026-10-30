@@ -16,6 +16,11 @@ permissions:
 jobs:
   apk:
     runs-on: ubuntu-latest
+    env:
+      # Optional repository secret: an Anthropic API key built into the app. When it's set, the APK
+      # is published only as a private draft release (visible to the repo's maintainers), because
+      # anyone with the file could read the key.
+      HOLO_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
     steps:
       - uses: actions/checkout@v5
 
@@ -49,6 +54,7 @@ jobs:
           cp app/build/outputs/apk/debug/app-debug.apk ../../HoloTutor.apk
 
       - uses: actions/upload-artifact@v4
+        if: ${{ env.HOLO_API_KEY == '' }}
         with:
           name: HoloTutor-apk
           path: HoloTutor.apk
@@ -57,6 +63,12 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "apk-${{ github.run_number }}" HoloTutor.apk \
-            --title "Holo Tutor APK (build ${{ github.run_number }})" \
-            --notes "Install on Android: download HoloTutor.apk on the phone, open it, and allow \"Install unknown apps\" when asked. Then open Holo Tutor, choose Study or Fun chat, paste your Anthropic API key once, and allow the microphone."
+          if [ -n "$HOLO_API_KEY" ]; then
+            gh release create "apk-key-${{ github.run_number }}" HoloTutor.apk --draft \
+              --title "Holo Tutor APK with built-in key (private draft, build ${{ github.run_number }})" \
+              --notes "PRIVATE: this APK contains the Anthropic API key from the ANTHROPIC_API_KEY secret. Don't share the file or publish this draft. Disable the key in console.anthropic.com when the demo is over."
+          else
+            gh release create "apk-${{ github.run_number }}" HoloTutor.apk \
+              --title "Holo Tutor APK (build ${{ github.run_number }})" \
+              --notes "Install on Android: download HoloTutor.apk on the phone, open it, and allow \"Install unknown apps\" when asked. Then open Holo Tutor, choose Study or Fun chat, paste your Anthropic API key once, and allow the microphone."
+          fi
