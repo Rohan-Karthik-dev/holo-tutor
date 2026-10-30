@@ -17,22 +17,21 @@ jobs:
   apk:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
       - name: Build the web app
         run: python3 build.py
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: '20'
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '21'
-      - uses: android-actions/setup-android@v3
 
       - name: Prepare the Android project
         working-directory: mobile
@@ -44,6 +43,7 @@ jobs:
       - name: Build the APK
         working-directory: mobile/android
         run: |
+          echo "sdk.dir=$ANDROID_HOME" > local.properties
           chmod +x gradlew
           ./gradlew assembleDebug --no-daemon
           cp app/build/outputs/apk/debug/app-debug.apk ../../HoloTutor.apk
@@ -54,11 +54,9 @@ jobs:
           path: HoloTutor.apk
 
       - name: Publish as a release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: apk-${{ github.run_number }}
-          name: Holo Tutor APK (build ${{ github.run_number }})
-          body: |
-            Install on Android: download HoloTutor.apk on the phone, open it, and allow "Install unknown apps" for your browser or Files app when asked.
-            Then open Holo Tutor, choose Study or Fun chat, paste your Anthropic API key once, and allow the microphone.
-          files: HoloTutor.apk
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "apk-${{ github.run_number }}" HoloTutor.apk \
+            --title "Holo Tutor APK (build ${{ github.run_number }})" \
+            --notes "Install on Android: download HoloTutor.apk on the phone, open it, and allow \"Install unknown apps\" when asked. Then open Holo Tutor, choose Study or Fun chat, paste your Anthropic API key once, and allow the microphone."
