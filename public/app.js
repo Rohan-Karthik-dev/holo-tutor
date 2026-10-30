@@ -2170,7 +2170,7 @@ let dictate = false, dictTimer = 0, micBlocked = false;
 const UA = navigator.userAgent || '';
 function dictTip() {
   if (/Android|iPhone|iPad|iPod/i.test(UA)) return 'Tap 🎤 on your keyboard and speak';
-  if (/Mac/i.test(UA)) return 'Edit → Start Dictation (or your dictation shortcut)';
+  if (/Mac/i.test(UA)) return 'Start dictation, speak, then stop it (Esc) so you can hear me';
   if (/Win/i.test(UA)) return 'Press Windows + H to dictate';
   return 'Use your keyboard\'s dictation to speak';
 }
