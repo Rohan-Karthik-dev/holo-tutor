@@ -15,36 +15,51 @@
 
   // ---------- listening ----------
   if (SRP) {
-    let current = null, lastPartial = '';
+    // Android's recogniser only reports "stopped" when it heard speech; on silence, errors or
+    // stop() it goes quiet. So every session here has a watchdog that polls isListening() and
+    // always ends the session (onend), or the app would wait for it forever and stop listening.
+    let current = null;
     SRP.addListener('partialResults', (d) => {
       const t = (d && d.matches && d.matches[0]) || '';
-      if (!current || !t) return;
-      lastPartial = t;
-      current._emit(t, false);
+      if (current && t) current._partial(t);
     });
     SRP.addListener('listeningState', (d) => {
-      const r = current;
-      if (!r) return;
-      if (d.status === 'started') { r.onstart && r.onstart(); r.onaudiostart && r.onaudiostart(); return; }
-      // stopped: Android ends a session after each phrase; the last partial result is what was said
-      current = null;
-      const said = lastPartial; lastPartial = '';
-      if (said && !r._aborted) r._emit(said, true);
-      r.onspeechend && r.onspeechend();
-      r.onend && r.onend();
+      if (!current) return;
+      if (d.status === 'started') current._started(); else current._finish(500); // final words arrive just after
     });
     let permitted = false;
     class NativeRecognition {
       constructor() { this.lang = 'en-IN'; this.continuous = false; this.interimResults = true; this.maxAlternatives = 1; }
       _emit(t, isFinal) {
-        if (!isFinal && this.onspeechstart) this.onspeechstart();
         const alt = [{ transcript: t, confidence: 1 }];
         alt.isFinal = isFinal;
         this.onresult && this.onresult({ resultIndex: 0, results: [alt] });
       }
+      _started() { if (this._s && !this._s.spoke) { this._s.spoke = true; this.onspeechstart && this.onspeechstart(); } }
+      _partial(t) { const s = this._s; if (!s || s.ending) { if (s) s.said = t; return; } s.said = t; this._started(); this._emit(t, false); }
+      _finish(wait) {
+        const s = this._s;
+        if (!s || s.done) return;
+        if (!s.ending) { s.ending = true; this.onspeechend && this.onspeechend(); }
+        clearTimeout(s.endTimer);
+        s.endTimer = setTimeout(() => this._close(), wait || 0);
+      }
+      _close(errorCode) {
+        const s = this._s;
+        if (!s || s.done) return;
+        s.done = true; clearInterval(s.poll); clearTimeout(s.endTimer); clearTimeout(s.cap);
+        if (current === this) current = null;
+        this._s = null;
+        if (s.aborted) { /* nothing to report */ }
+        else if (s.said) this._emit(s.said, true);
+        else if (errorCode !== null) this.onerror && this.onerror({ error: errorCode || 'no-speech' });
+        this.onend && this.onend();
+      }
       async start() {
-        if (current) return;
-        current = this; this._aborted = false; lastPartial = '';
+        if (this._s) return;
+        if (current && current !== this) current._close(null);
+        const s = this._s = { said: '', spoke: false, ending: false, done: false, aborted: false, t0: Date.now() };
+        current = this;
         try {
           if (!permitted) {
             let p = await SRP.checkPermissions();
@@ -54,16 +69,26 @@
             if (!av.available) throw { error: 'service-not-allowed' };
             permitted = true;
           }
+          if (s.done) return;
           await SRP.start({ language: this.lang || 'en-IN', maxResults: 1, partialResults: true, popup: false });
+          if (s.done) { SRP.stop().catch(() => {}); return; }
+          this.onstart && this.onstart(); this.onaudiostart && this.onaudiostart();
+          let idle = 0;
+          s.poll = setInterval(() => {
+            if (s.done || s.ending) return;
+            SRP.isListening().then((r) => {
+              if (s.done || s.ending) return;
+              if (r && r.listening === false && Date.now() - s.t0 > 900) { if (++idle >= 2) this._finish(s.said ? 400 : 0); } else idle = 0;
+            }).catch(() => {});
+          }, 500);
+          s.cap = setTimeout(() => { if (!s.done) { SRP.stop().catch(() => {}); this._finish(700); } }, 30000); // a phrase never runs this long
         } catch (e) {
-          if (current === this) current = null;
-          const code = (e && e.error) || (/permission/i.test((e && e.message) || '') ? 'not-allowed' : 'no-speech');
-          this.onerror && this.onerror({ error: code });
-          this.onend && this.onend();
+          const code = (e && e.error) || (/permission|denied/i.test((e && e.message) || '') ? 'not-allowed' : 'no-speech');
+          this._close(code);
         }
       }
-      stop() { SRP.stop().catch(() => {}); }
-      abort() { this._aborted = true; SRP.stop().catch(() => {}); }
+      stop() { if (!this._s) return; SRP.stop().catch(() => {}); this._finish(700); }
+      abort() { const s = this._s; if (!s) return; s.aborted = true; SRP.stop().catch(() => {}); setTimeout(() => this._close(), 0); }
     }
     window.SpeechRecognition = NativeRecognition;
     window.webkitSpeechRecognition = NativeRecognition;
@@ -73,7 +98,12 @@
   if (TTS) {
     let voices = [];
     const changed = [];
-    TTS.getSupportedVoices().then((r) => { voices = (r && r.voices) || []; changed.forEach((f) => { try { f(); } catch (e) {} }); }).catch(() => {});
+    const loadVoices = (tries) => TTS.getSupportedVoices().then((r) => { // the engine can take a moment to start
+      voices = (r && r.voices) || [];
+      if (!voices.length && tries > 0) return setTimeout(() => loadVoices(tries - 1), 1500);
+      changed.forEach((f) => { try { f(); } catch (e) {} });
+    }).catch(() => { if (tries > 0) setTimeout(() => loadVoices(tries - 1), 1500); });
+    loadVoices(6);
     let active = null, speaking = false;
     const queue = [];
     if (TTS.addListener) TTS.addListener('onRangeStart', (info) => { if (active && active.onboundary) active.onboundary({ name: 'word', charIndex: info.start }); });

@@ -2,6 +2,11 @@
   "appId": "com.holotutor.app",
   "appName": "Holo Tutor",
   "webDir": "www",
-  "server": { "androidScheme": "https" },
-  "android": { "backgroundColor": "#07090C" }
+  "server": {
+    "androidScheme": "https"
+  },
+  "android": {
+    "backgroundColor": "#07090C",
+    "adjustMarginsForEdgeToEdge": "force"
+  }
 }

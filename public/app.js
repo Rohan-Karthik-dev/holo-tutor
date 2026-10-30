@@ -28,7 +28,7 @@ const prefs = {
   voiceOnly: store.get('voiceOnly', true),
   awake: store.get('awake', true),
   rig: store.get('rig', null) || store.get('mouth', null), // the face rig of the tutor photo
-  admin: store.get('admin', true), // testing console
+  admin: store.get('admin', !(window.matchMedia && matchMedia('(pointer: coarse)').matches)), // testing console (off by default on phones)
   voiceEngine: store.get('voiceEngine', 'auto'), // 'auto' | 'device' | 'cloud'
   photoLook: store.get('photoLook', 'real'),
   faceFrame: store.get('faceFrame', 'face'), // 'face' = just the face, filling the screen; 'head' = head and shoulders // 'real' = natural colour, 'holo' = cyan hologram
@@ -468,9 +468,12 @@ let lastTap = 0;
 $('#v-live').addEventListener('click', (e) => { // double-tap to leave, even in voice-only
   if (e.target.closest('#liveExit')) return;
   const now = Date.now();
-  if (now - lastTap < 400) show('session');
+  if (now - lastTap < 400) { show('session'); lastTap = 0; return; }
   lastTap = now;
+  if (busy) interrupt(); // one tap while it talks: stop and listen
 });
+// Tap the tutor while it's talking to cut in (the mic is paused while it speaks, so this is the quick way).
+$('#sessCanvas').closest('.stage').addEventListener('click', () => { if (busy && view === 'session') interrupt(); });
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && view === 'live') show('session'); });
 function cycleOrient() {
   savePref('orient', ORIENTS[(ORIENTS.indexOf(prefs.orient) + 1) % ORIENTS.length]);
@@ -2346,6 +2349,18 @@ function drawWave(t) {
 }
 requestAnimationFrame(drawWave);
 // Voice picker (Settings): any voice this device offers, or Auto.
+// Android names voices like "en-in-x-ene-network": show "Indian English · Voice 2 · online" instead.
+const VOICE_REGION = { US: 'American', GB: 'British', UK: 'British', IN: 'Indian', AU: 'Australian', CA: 'Canadian', IE: 'Irish', NZ: 'New Zealand', ZA: 'South African', NG: 'Nigerian', SG: 'Singapore', PH: 'Philippine', KE: 'Kenyan', GH: 'Ghanaian', TZ: 'Tanzanian', PK: 'Pakistani' };
+function voiceLabel(v, counts) {
+  const region = String(v.lang || '').replace('_', '-').split('-')[1] || '';
+  const accent = (VOICE_REGION[region.toUpperCase()] || region.toUpperCase()) + ' English';
+  const online = v.localService === false || /network/i.test(v.name);
+  if (/^[a-z]{2,3}[-_][a-z]{2,3}[-_]x[-_]/i.test(v.name) || /^[a-z]{2}[-_][A-Z]{2}(-language)?$/.test(v.name)) {
+    const k = accent + (online ? 'o' : 'l'); counts[k] = (counts[k] || 0) + 1;
+    return `${accent.trim()} · Voice ${counts[k]}${online ? ' · online, more natural' : ''}`;
+  }
+  return `${v.name} · ${accent.trim()}${online ? ' · online' : ''}`;
+}
 function renderVoicePick() {
   const sel = $('#voicePick'), note = $('#voicePickNote');
   if (!('speechSynthesis' in window)) { sel.replaceChildren(new Option('Not available in this browser', '')); sel.disabled = true; note.textContent = 'This browser has no built-in voices. Answers still appear as text' + (cloudOK ? ', and the cloud voice can speak them.' : '.'); return; }
@@ -2354,7 +2369,8 @@ function renderVoicePick() {
   const list = (en.length ? en : all).slice().sort((a, b) => a.lang.localeCompare(b.lang) || a.name.localeCompare(b.name));
   sel.disabled = false;
   sel.replaceChildren(new Option(`Auto (best English voice${voice && !prefs.voiceName ? ': ' + voice.name : ''})`, ''));
-  list.forEach((v) => sel.append(new Option(`${v.name} · ${v.lang}${v.localService === false ? ' · online' : ''}`, v.voiceURI || v.name)));
+  const n = {};
+  list.forEach((v) => sel.append(new Option(voiceLabel(v, n), v.voiceURI || v.name)));
   sel.value = list.some((v) => (v.voiceURI || v.name) === prefs.voiceName) ? prefs.voiceName : '';
   note.textContent = all.length ? `${list.length} voice${list.length === 1 ? '' : 's'} on this device. Voices marked “online” need internet.` : 'No voices have loaded yet. If this stays empty, this device has no text-to-speech voices installed.';
 }

@@ -808,3 +808,23 @@ body[data-state="typing"] .typerow.dictating ~ .voicedeck .mic { background: rad
 .msg.tutor { position: relative; }
 .hearbtn { margin-left: 8px; vertical-align: middle; width: 30px; height: 30px; border-radius: 50%; border: 1px solid rgba(79, 227, 255, .35); background: rgba(79, 227, 255, .08); font-size: 14px; line-height: 1; cursor: pointer; }
 .hearbtn:hover { background: rgba(79, 227, 255, .18); }
+
+/* ---------- phone fit: nothing gets squashed or overlapped ---------- */
+.scroll > * { flex-shrink: 0; }
+#v-session .stage { height: clamp(150px, 34vh, 300px); }
+@media (max-height: 760px) {
+  #v-session .stage { height: clamp(140px, 28vh, 230px); }
+  .voicedeck { gap: 6px; padding: 8px 10px 10px; }
+  .voicedeck .micwrap { width: 62px; height: 62px; }
+  .voicedeck .iconbtn { width: 38px; height: 38px; }
+}
+@media (max-height: 640px) {
+  #v-session .stage { height: 120px; }
+  .voicedeck #voiceWave { display: none; }
+}
+@media (max-width: 370px) { .voicedeck .iconbtn { width: 36px; height: 36px; } .voicedeck .micbar { gap: 4px; } }
+#studyProg { display: flex; flex-direction: column; gap: 20px; }
+#studyProg[hidden] { display: none; }
+.sesstitle > * { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sesshead > button { flex-shrink: 0; }
+@media (max-width: 420px) { .sesshead .pilltext { display: none; } .sesshead .pill { padding-inline: 12px; } }
