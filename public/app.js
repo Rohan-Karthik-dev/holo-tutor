@@ -35,7 +35,7 @@ const prefs = {
   subject: store.get('subject', 'any'),
   level: store.get('level', 'High school'),
   lang: store.get('lang', 'en-IN'),
-  bargeIn: store.get('bargeIn', true),
+  bargeIn: store.get('talkOver', false), // keep listening while the tutor speaks: only with headphones
   wake: store.get('wake', false),
   rate: store.get('rate', 1),
   showcase: store.get('showcase', false),
@@ -940,7 +940,9 @@ function resumeIdle() {
   if (!VOICE_VIEWS.includes(view)) { setStatus('idle'); return; }
   if (!rec || noVoice) { setStatus('typing'); if (dictate && view === 'session') setTimeout(() => $('#typeInput').focus(), 50); return; }
   if (paused) { setStatus('paused'); return; }
-  setStatus('listening'); listen();
+  setStatus('listening');
+  const wait = 600 - (Date.now() - lastSpeechEnd);
+  if (wait > 0) setTimeout(() => { if (!busy && !paused && VOICE_VIEWS.includes(view)) listen(); }, wait); else listen();
 }
 function interrupt() {
   reqId++;
@@ -1072,11 +1074,11 @@ function micWhileBusy() {
 }
 const recentSpoken = [];
 let lastSpeechEnd = 0;
-function noteSpoken(t) { recentSpoken.push(t.toLowerCase()); if (recentSpoken.length > 4) recentSpoken.shift(); }
+function noteSpoken(t) { recentSpoken.push(t.toLowerCase()); if (recentSpoken.length > 12) recentSpoken.shift(); }
 function isEcho(heard) {
   const words = heard.toLowerCase().match(/[\p{L}\p{M}\p{N}']+/gu) || [];
   if (!words.length) return true;
-  const pool = new Set(recentSpoken.concat(speechQ).join(' ').toLowerCase().match(/[\p{L}\p{M}\p{N}']+/gu) || []);
+  const pool = new Set(recentSpoken.concat(speechQ.map((q) => q.text || ''), lastAnswer).join(' ').toLowerCase().match(/[\p{L}\p{M}\p{N}']+/gu) || []);
   return words.filter((w) => pool.has(w)).length / words.length >= 0.6;
 }
 function mute() { micWanted = false; if (rec && recRunning) { try { rec.abort(); } catch {} } }
@@ -1103,7 +1105,7 @@ function onHeard(raw) {
     if (/\b(close|stop|exit|end|quit|pause|hide)\b.*\b(video|it|this)\b|^(close|stop|back|done|exit|enough)$|बंद|रुको|ఆపు|మూసివేయి|ఆపండి/u.test(norm(text))) closeVideo();
     return;
   }
-  if (busy || Date.now() - lastSpeechEnd < 1500) {
+  if (busy || Date.now() - lastSpeechEnd < 2500) {
     // Full duplex: the mic stays open while the tutor talks. Ignore the tutor's own voice
     // coming back through the speaker; anything else you say cuts in.
     if (STOP_RE.test(text) && text.split(/\s+/).length <= 3) { if (busy) interrupt(); return; }
@@ -2082,7 +2084,7 @@ function renderSettings() {
 $$('#setVoiceSeg button').forEach((b) => b.addEventListener('click', () => { setVoiceStyle(b.dataset.voice); speakOnce('This is how I sound.'); }));
 $('#rateRange').addEventListener('input', (e) => { savePref('rate', Number(e.target.value)); renderSettings(); });
 $('#rateRange').addEventListener('change', () => speakOnce('This is my speaking speed.'));
-$('#swBarge').addEventListener('click', () => { savePref('bargeIn', !prefs.bargeIn); renderSettings(); });
+$('#swBarge').addEventListener('click', () => { prefs.bargeIn = !prefs.bargeIn; store.set('talkOver', prefs.bargeIn); renderSettings(); });
 $('#swWake').addEventListener('click', () => { savePref('wake', !prefs.wake); renderSettings(); });
 let clearTimer = 0;
 $('#clearData').addEventListener('click', (e) => {
