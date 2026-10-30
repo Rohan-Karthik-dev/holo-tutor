@@ -1,0 +1,20 @@
+{
+  "name": "holo-tutor-mobile",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Holo Tutor as an Android app (Capacitor), with Android's own speech recognition and text-to-speech.",
+  "scripts": {
+    "prep": "node prep.mjs",
+    "sync": "node prep.mjs && npx cap sync android",
+    "apk": "node prep.mjs && npx cap sync android && cd android && ./gradlew assembleDebug"
+  },
+  "dependencies": {
+    "@capacitor-community/speech-recognition": "7.0.1",
+    "@capacitor-community/text-to-speech": "6.1.0",
+    "@capacitor/android": "7.6.10",
+    "@capacitor/core": "7.6.10"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "7.6.10"
+  }
+}

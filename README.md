@@ -36,6 +36,26 @@ A voice-first holographic tutor for a single-pane 45° Pepper's ghost holo box. 
 On the photo tutor, a blink is a real eyelid: the skin just above the eye (never the eyebrow) slides down over it like a shutter, the lash line rides on the lid's edge at its natural thickness and a soft shadow falls under it, while the eye itself is never squashed (about 75 ms to close, a short hold, 170 ms to open). All tutors behave like a person: irregular blinks (about 15–20 a minute, with the odd double blink, a blink when a phrase starts or the eyes jump, half-blinks while thinking), quick eye movements that mostly hold your gaze and glance away while talking, a soft resting smile, small nods at commas and sentence ends, a slow head tilt and breathing. On the photo tutor the irises and lip corners move inside the photo itself; the eyebrows stay still. Lips are driven by mouth shapes read from the words: open vowels (a), spread (ee), rounded and pushed out (o, oo), lips pressed shut (m, b, p), lower lip tucked under the top teeth (f, v), and tongue up behind the teeth (l, t, d, n, th). Each shape blends into the next, closes faster than it opens, and — when the cloud voice is playing — opens wider on loud syllables and closes on quiet ones. All three tutors lip-sync: the holo human's mouth, the photo's jaw and the globe's voice ring all move with the words being spoken. Settings and the face photo are remembered on the device.
 
 
+## Android app (APK)
+
+`mobile/` turns Holo Tutor into an Android app with [Capacitor](https://capacitorjs.com). Inside the app, voice uses **Android's own engines**: speech recognition (`@capacitor-community/speech-recognition`, Android SpeechRecognizer) and text-to-speech (`@capacitor-community/text-to-speech`, the phone's TTS voices). `mobile/native-voice.js` makes them look like the browser's `SpeechRecognition` and `speechSynthesis`, so the app code is the same everywhere. It listens after the tutor finishes speaking (no echo loop), asks for the microphone once, keeps the screen on, and has the Holo Tutor icon and a dark splash screen.
+
+The AI is the same as the standalone file: paste your Anthropic API key once in the app (stored only on the phone). Without a key the tutor can't answer.
+
+**Get the APK without installing anything:** push this repo to GitHub; the **Build Android APK** workflow (`.github/workflows/android-apk.yml`) builds it in the cloud and publishes `HoloTutor.apk` under **Releases**. You can also run it by hand from the Actions tab.
+
+**Or build it yourself** (needs Node 20+, JDK 21 and Android Studio):
+```
+python3 build.py
+cd mobile
+npm install
+npm run sync            # copies the latest app into the Android project
+cd android && ./gradlew assembleDebug    # or open mobile/android in Android Studio → Build → Build APK
+```
+The APK is `mobile/android/app/build/outputs/apk/debug/app-debug.apk`. It's signed with `mobile/android/holo-tutor-debug.keystore` so new builds install over old ones; that key is for sideloading only; make a private release key before publishing to the Play Store.
+
+**Install on a phone:** copy or download the APK to the phone, open it, and allow "Install unknown apps" when Android asks.
+
 ## Free speech-to-speech (browser voice console)
 
 Listening and speaking use only free, built-in browser features: **Web Speech API `SpeechRecognition`** for your voice and **`speechSynthesis`** for the tutor's. No extra service, key or cost. Your words still go to the same AI connection as before (`askBrain` in `brain.js` / `brain-direct.js` / `brain-preview.js`); nothing new was connected.

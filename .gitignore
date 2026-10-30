@@ -2,3 +2,4 @@ data/
 node_modules/
 preview/app.js
 .DS_Store
+mobile/www/

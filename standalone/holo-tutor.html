@@ -5962,8 +5962,9 @@ function micProblem(code) {
 }
 function retryMic() {
   if (!SR) { openTyping(); return; }
-  noVoice = false; paused = false; netErrors = 0; hideVoiceAlert();
+  noVoice = false; paused = false; netErrors = 0; micBlocked = false; hideVoiceAlert();
   initRecognition();
+  if (window.__holoNative) { resumeIdle(); return; } // the Android app asks for the mic itself
   try { navigator.mediaDevices?.getUserMedia?.({ audio: true }).then((st) => { st.getTracks().forEach((t) => t.stop()); resumeIdle(); }).catch(() => micProblem('not-allowed')); } catch { resumeIdle(); }
   if (!navigator.mediaDevices?.getUserMedia) resumeIdle();
 }
@@ -5972,7 +5973,7 @@ let voiceChecked = false;
 function checkVoiceSupport() {
   if (voiceChecked) return; voiceChecked = true;
   if (!SR) showVoiceAlert('mic', 'This browser can\'t listen directly. Use voice typing: tap the mic, then your keyboard\'s 🎤 (or your computer\'s dictation). I\'ll send it when you pause.', 'Voice typing', () => startDictation());
-  else navigator.permissions?.query?.({ name: 'microphone' }).then((p) => { if (p.state === 'denied') { noVoice = true; micProblem('not-allowed'); if (!busy) setStatus('typing'); } }).catch(() => {});
+  else if (!window.__holoNative) navigator.permissions?.query?.({ name: 'microphone' }).then((p) => { if (p.state === 'denied') { noVoice = true; micProblem('not-allowed'); if (!busy) setStatus('typing'); } }).catch(() => {});
   if (!('speechSynthesis' in window) && !cloudOK) setTimeout(() => { if (!cloudOK && !voiceAlertKind) showVoiceAlert('voice', 'This browser can\'t speak out loud, so answers will appear as text.', '', null); }, 1500);
 }
 // The waveform: follows the tutor's voice while it speaks, your voice while it listens.
