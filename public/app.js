@@ -1028,7 +1028,10 @@ let rec = null, recRunning = false, micWanted = false, noVoice = !SR, hearing = 
 function initRecognition() {
   if (rec || !SR) return;
   rec = new SR();
-  rec.lang = cfg.lang; rec.continuous = false; rec.interimResults = true; rec.maxAlternatives = 1;
+  // On computers, one long listening session (fewer restarts, and Chrome asks for the mic far
+  // less often, e.g. when the app is opened as a file). Android's continuous mode repeats words,
+  // so phones restart after each phrase instead.
+  rec.lang = cfg.lang; rec.continuous = !/Android/i.test(navigator.userAgent || ''); rec.interimResults = true; rec.maxAlternatives = 1;
   rec.onresult = (e) => {
     let interim = '', final = '';
     for (let i = e.resultIndex; i < e.results.length; i++) {
