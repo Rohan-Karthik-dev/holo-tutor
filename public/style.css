@@ -804,3 +804,7 @@ body.twinmode .voicedeck { border-color: rgba(183, 156, 255, .35); }
 /* voice typing (keyboard dictation): the box glows while it's waiting for your voice */
 .typerow.dictating input { border-color: #5BE3A1 !important; box-shadow: 0 0 0 3px rgba(91, 227, 161, .18), 0 0 22px rgba(91, 227, 161, .25); }
 body[data-state="typing"] .typerow.dictating ~ .voicedeck .mic { background: radial-gradient(circle at 35% 30%, #A8FFD6, #2FCB86); color: #052A1A; box-shadow: 0 0 34px rgba(91, 227, 161, .7); border-color: transparent; }
+/* tap to hear an answer */
+.msg.tutor { position: relative; }
+.hearbtn { margin-left: 8px; vertical-align: middle; width: 30px; height: 30px; border-radius: 50%; border: 1px solid rgba(79, 227, 255, .35); background: rgba(79, 227, 255, .08); font-size: 14px; line-height: 1; cursor: pointer; }
+.hearbtn:hover { background: rgba(79, 227, 255, .18); }

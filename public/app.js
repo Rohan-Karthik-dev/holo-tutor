@@ -870,6 +870,7 @@ function playCloud(item, done) {
 }
 function speakDevice(item, done) {
   const u = makeUtterance(item.text);
+  item.u = u; // keep it alive: Chrome can garbage-collect an utterance and never speak it
   let started = false;
   u.onstart = () => { started = true; face.speak(item.text, u.rate); };
   u.onboundary = (e) => { started = true; if (!e.name || e.name === 'word') face.sync(e.charIndex); };
@@ -881,11 +882,11 @@ function speakDevice(item, done) {
     admLog('err', 'this device did not speak; ' + (cloudOK ? 'switching to cloud voice' : 'no cloud voice set up'));
     try { speechSynthesis.cancel(); } catch {}
     if (cloudOK) { item.audio = cloudVoice.synth(item.text, voiceOpts()); clearTimeout(watchdog); playCloud(item, done); }
-    else { noVoiceNotice(); done(); }
+    else { soundBlocked(item.text); done(); }
   }, 3500);
   watchdog = setTimeout(() => { clearTimeout(check); try { speechSynthesis.cancel(); } catch {} done(); }, 5000 + item.text.length * 120);
   face.speak(item.text, u.rate);
-  try { speechSynthesis.speak(u); } catch (e) { admLog('err', 'device voice: ' + e.message); }
+  try { if (speechSynthesis.paused) speechSynthesis.resume(); speechSynthesis.speak(u); } catch (e) { admLog('err', 'device voice: ' + e.message); }
 }
 function speakOnce(text) { enqueueSpeech(text); }
 // Muted: no sound, but the face still mouths the words for about as long as they'd take to say.
@@ -903,6 +904,7 @@ function noVoiceNotice() {
   if (voiceNoticeShown) return;
   voiceNoticeShown = true;
   const lname = { hi: 'Hindi', te: 'Telugu' }[langBase(cfg.lang)];
+  if ('speechSynthesis' in window && !lname) { soundBlocked(lastAnswer); return; }
   const msg = MIC_NOTE ? 'I can\'t speak out loud inside this preview. Open the standalone Holo Tutor in Chrome or Safari to hear me.'
     : lname ? `This phone has no ${lname} voice, so I can't speak yet. Install it: Settings → Text-to-speech → Google → ${lname}. Or add a Google voice key in Settings → Voice.`
     : 'This browser can\'t speak out loud. Try Chrome or Safari, check the volume and silent switch, or add a Google voice key in Settings → Voice.';
@@ -1009,7 +1011,7 @@ async function ask(text, image) {
   if (pending.trim()) enqueueSpeech(pending);
   const r = splitReply(full + (full.includes('<board>') && !full.includes('</board>') ? '\n</board>' : ''));
   updateBoard(r.board, r.topic);
-  if (!r.spoken) bubble.el.remove();
+  if (!r.spoken) bubble.el.remove(); else addHearButton(bubble, r.spoken);
   lastAnswer = r.spoken;
   history.push({ role: 'assistant', text: full.trim() || '(no answer)' });
   lessonRecord(text, full);
@@ -2061,7 +2063,7 @@ function enterTrain() { if (twin.consent && !busy) askTwinQ(curQ ? '' : `Welcome
 // ---------- settings ----------
 function unlockAudio() {
   try { audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)(); audioCtx.resume?.(); } catch {}
-  try { if ('speechSynthesis' in window) speechSynthesis.speak(new SpeechSynthesisUtterance(' ')); } catch {}
+  primeSpeech(true);
   try { player.src = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA='; player.play().catch(() => {}); } catch {}
 }
 function renderSettings() {
@@ -2206,6 +2208,39 @@ $('#micBtn').addEventListener('click', () => {
   resumeIdle();
 });
 
+// ---------- making sure the tutor is heard ----------
+// Browsers only let a page speak after the person has tapped it, and some (Safari) only count a
+// real utterance as "unlocking" speech. Every tap re-arms the voice, and if speaking failed
+// earlier, the next tap lets it try again.
+let speechPrimedAt = 0;
+function primeSpeech(force = false) {
+  if (!('speechSynthesis' in window)) return;
+  try {
+    if (speechSynthesis.paused) speechSynthesis.resume();
+    if (deviceBroken) { deviceBroken = false; voiceNoticeShown = false; renderVoiceStatus(); } // give the voice another chance after a tap
+    if (!force && Date.now() - speechPrimedAt < 60000) return;
+    if (speakingNow) return; // already talking: don't queue anything in front
+    speechPrimedAt = Date.now();
+    const u = new SpeechSynthesisUtterance('.'); u.volume = 0; u.rate = 2;
+    primeSpeech.u = u; speechSynthesis.speak(u);
+  } catch {}
+}
+document.addEventListener('pointerdown', () => primeSpeech(), true);
+document.addEventListener('keydown', () => primeSpeech(), true);
+// The voice was blocked: one tap plays the answer (a tap always lets the page speak).
+function soundBlocked(text) {
+  admLog('err', 'the browser blocked speech; offering tap to hear');
+  if (voiceAlertKind === 'sound') return;
+  showVoiceAlert('sound', 'Your browser blocked the voice. Tap “Hear it” to listen (and check your volume). After that tap, answers should play by themselves.', '🔊 Hear it', () => { primeSpeech(true); if (busy) interrupt(); say(lastAnswer || text); });
+}
+// A speaker button on each answer: tap to hear that answer again.
+function addHearButton(m, text) {
+  if (!text) return;
+  const b = el('button', 'hearbtn', '🔊'); b.type = 'button'; b.title = 'Hear this answer'; b.setAttribute('aria-label', 'Hear this answer');
+  b.addEventListener('click', (e) => { e.stopPropagation(); primeSpeech(true); if (busy) interrupt(); say(text); });
+  m.el.append(b);
+}
+
 // ---------- voice console: stop, replay, mute, waveform, live transcript, clear problems ----------
 function openTyping() { $('#typeRow').hidden = false; $('#typeInput').focus(); }
 $('#stopBtn').addEventListener('click', () => { if (busy) interrupt(); });
@@ -2317,7 +2352,7 @@ function startVoice() {
   if (noVoice) $('#typeRow').hidden = false;
   if (!startVoice.unlocked) { // browsers only allow sound after a tap: unlock both voices now
     startVoice.unlocked = true;
-    try { if ('speechSynthesis' in window) speechSynthesis.speak(new SpeechSynthesisUtterance(' ')); } catch {}
+    primeSpeech(true);
     try { player.src = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA='; player.play().catch(() => {}); } catch {}
     try { audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)(); audioCtx.resume?.(); } catch {}
   }
