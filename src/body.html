@@ -478,6 +478,8 @@
           <div class="row"><button id="sampleAdd" class="pill-outline" type="button">Add writing sample</button><span id="sampleCount" class="small muted"></span></div></div>
         <div class="field"><span class="label">YOUR TWIN PROFILE</span><div id="twProfile" class="twprofile"></div>
           <div class="row"><button id="twBuild" class="pill-outline" type="button">✨ Update my twin</button></div></div>
+        <div class="field"><span class="label">YOUR TWIN'S VOICE</span>
+          <div class="row"><button id="twVoice" class="pill-outline" type="button">🎙 Give it my voice</button><span id="twVoiceNote" class="small muted"></span></div></div>
         <button id="twTalk" class="cta twtalk" type="button">💬 Talk to my twin</button>
         <button id="twReset" class="guestbtn danger" type="button">Delete my twin</button>
       </div>
@@ -537,6 +539,36 @@
         <label for="voicePick" class="label">VOICE ON THIS DEVICE</label>
         <select id="voicePick" class="select"></select>
         <p id="voicePickNote" class="small muted"></p>
+      </div>
+      <div class="field myvoice" id="myVoiceCard">
+        <span class="label">MY VOICE <span class="newtag">NEW</span></span>
+        <p class="small muted">Let the tutor (and your AI twin) speak in a voice like yours. Read a short passage aloud once.</p>
+        <div class="seg3" role="radiogroup" aria-label="My voice" id="myVoiceSeg">
+          <button role="radio" data-mv="off">Off</button>
+          <button role="radio" data-mv="match">Voice match</button>
+          <button role="radio" data-mv="clone">My clone</button>
+        </div>
+        <p id="myVoiceStatus" class="small mvstatus"></p>
+        <div id="mvRecorder" class="mvrec">
+          <p class="mvread" id="mvRead"></p>
+          <div class="mvmeter"><i id="mvLevel"></i></div>
+          <div class="row mvbtns">
+            <button id="mvRecBtn" class="pill" type="button">🎙 Record my voice</button>
+            <label class="pill-outline mvupload">⬆ Upload a recording<input id="mvFile" type="file" accept="audio/*" hidden></label>
+            <button id="mvPlayBtn" class="pill-outline" type="button" hidden>▶ Hear the match</button>
+          </div>
+          <p id="mvResult" class="small muted"></p>
+        </div>
+        <form id="mvCloneBox" class="keybox mvclone" autocomplete="off">
+          <label for="elKeyInput" class="label">ELEVENLABS KEY (FOR "MY CLONE")</label>
+          <div class="typerow"><input id="elKeyInput" type="password" placeholder="ElevenLabs API key"><button type="submit" class="pill">Save</button></div>
+          <span class="small muted">A real copy of your voice. Needs an ElevenLabs plan with voice cloning (Starter or higher) and internet. The key stays on this device.</span>
+          <label class="mvconsent"><input id="mvConsent" type="checkbox"> This is my own voice, or the person has agreed to it being copied.</label>
+          <div class="row mvbtns">
+            <button id="mvMakeClone" class="pill" type="button">✨ Make my clone</button>
+            <button id="mvDelClone" class="pill-outline" type="button" hidden>Delete clone</button>
+          </div>
+        </form>
       </div>
       <div class="field">
         <span class="label">VOICE ENGINE</span>

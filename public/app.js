@@ -9,6 +9,7 @@ import { moveMouth, isRig } from './lips.js';
 import { T, langBase } from './i18n.js';
 import { Account, AVATARS } from './account.js';
 import { TWIN_CATS, loadTwin, twinStrength, twinStage, catCounts, nextTwinQuestion, twinMaterial, cleanProfile } from './twin.js';
+import { READ_ALOUD, startRecording, decodeFile, analyzeVoice, matchVoice, toWav, voiceClone } from './myvoice.js';
 import { FUN_CATS, BADGES, loadFun, levelOf, levelTitle, xpForLevel, funStreak, funDayKey, funMessage, funTrivia, funChatEnded, funDaily } from './funprog.js';
 
 // ---------- settings ----------
@@ -766,6 +767,10 @@ function setStatus(state) {
 const speechQ = []; // [{ text, audio?: Promise<Blob> }]
 let speakingNow = false, currentItem = null, watchdog = 0, voice = null;
 let deviceBroken = false, cloudOK = false, cloudFails = 0, voiceNoticeShown = false;
+// "My voice": a matched device voice (free) or a cloned voice (ElevenLabs).
+let myVoice = store.get('myVoice', { mode: 'off' }), cloneFails = 0, cloneDown = false;
+const cloneOn = () => myVoice.mode === 'clone' && Boolean(myVoice.cloneId) && Boolean(voiceClone.getKey()) && !cloneDown;
+const matchOn = () => (myVoice.mode === 'match' || (myVoice.mode === 'clone' && !cloneOn())) && Boolean(myVoice.match?.voiceName || myVoice.match?.pitch);
 const hasDevice = () => 'speechSynthesis' in window && !deviceBroken;
 const deviceVoices = () => { try { return speechSynthesis.getVoices(); } catch { return []; } };
 function pickVoice() {
@@ -795,16 +800,23 @@ const voiceOpts = () => ({ lang: cfg.lang, style: prefs.voiceStyle, rate: cfg.ra
 function makeUtterance(text) {
   const u = new SpeechSynthesisUtterance(text);
   const st = VOICE_STYLES[prefs.voiceStyle] || VOICE_STYLES.Clear;
-  if (voice) { try { u.voice = voice; } catch {} }
-  u.lang = voice?.lang || cfg.lang;
-  u.rate = st.rate * cfg.rate; u.pitch = st.pitch;
+  let v = voice, pitch = st.pitch, rate = st.rate;
+  if (matchOn()) { // your voice match: the closest voice here, tuned to your pitch and pace
+    const m = myVoice.match;
+    v = (m.voiceName && deviceVoices().find((x) => x.voiceURI === m.voiceName || x.name === m.voiceName)) || voice;
+    pitch = m.pitch || 1; rate = m.rate || 1;
+  }
+  if (v) { try { u.voice = v; } catch {} }
+  u.lang = v?.lang || cfg.lang;
+  u.rate = rate * cfg.rate; u.pitch = pitch;
   return u;
 }
 function enqueueSpeech(text) {
   const t = cleanForSpeech(text);
   if (t) {
     const item = { text: t };
-    if (useCloud()) item.audio = cloudVoice.synth(t, voiceOpts()); // start fetching now so sentences play back to back
+    if (cloneOn() && !prefs.muted) { item.audio = voiceClone.synth(myVoice.cloneId, t, cfg.rate); item.clone = true; }
+    else if (useCloud()) item.audio = cloudVoice.synth(t, voiceOpts()); // start fetching now so sentences play back to back
     else if (langBase(cfg.lang) !== 'en' && deviceVoices().length && !deviceHasLang()) noVoiceNotice(); // still tries, but warn: no voice for this language
     speechQ.push(item);
   }
@@ -853,7 +865,7 @@ function playCloud(item, done) {
   watchdog = setTimeout(done, 15000 + item.text.length * 150);
   item.audio.then((blob) => {
     if (currentItem !== item) return;
-    cloudFails = 0;
+    if (item.clone) cloneFails = 0; else cloudFails = 0;
     const url = URL.createObjectURL(blob);
     const finish = () => { URL.revokeObjectURL(url); done(); };
     player.onloadedmetadata = () => {
@@ -866,8 +878,13 @@ function playCloud(item, done) {
     player.play().catch((e) => { admLog('err', 'voice playback: ' + e.message); finish(); });
   }).catch((e) => {
     if (currentItem !== item) return;
-    admLog('err', 'cloud voice: ' + e.message);
-    if (++cloudFails >= 2) { cloudOK = false; renderVoiceStatus(); }
+    admLog('err', (item.clone ? 'voice clone: ' : 'cloud voice: ') + e.message);
+    if (item.clone) {
+      if (++cloneFails >= 2 || /key|plan|reach/i.test(e.message)) {
+        if (!cloneDown) addMsg('tutor', `My cloned voice isn't working right now (${e.message}) so I'm using ${myVoice.match ? 'your voice match' : 'the built-in voice'} for now.`).el.classList.add('err');
+        cloneDown = true; speechQ.forEach((q) => { if (q.clone) { q.audio = null; q.clone = false; } });
+      }
+    } else if (++cloudFails >= 2) { cloudOK = false; renderVoiceStatus(); }
     if (hasDevice()) { item.audio = null; speakDevice(item, done); } else { noVoiceNotice(); done(); }
   });
 }
@@ -1940,6 +1957,7 @@ const saveTwin = () => store.set('twin', twin);
 const twinFirst = () => (twin.name || Account.active?.name || 'my').split(' ')[0];
 const ACKS = ['Got it!', 'Love that.', 'Nice, noted.', 'That sounds like you.', 'Thanks, I\'m learning.', 'Okay, saved.'];
 function renderTrain() {
+  renderMyVoice();
   const ok = twin.consent;
   $('#twinConsent').hidden = ok; $('#twinMain').hidden = !ok;
   if (!ok) { $('#twinNameIn').value = twin.name || Account.active?.name || ''; return; }
@@ -2077,6 +2095,7 @@ function unlockAudio() {
 function renderSettings() {
   renderAccount();
   renderVoicePick();
+  renderMyVoice();
   renderVoiceStatus();
   $$('#setVoiceSeg button').forEach((b) => b.setAttribute('aria-checked', String(b.dataset.voice === prefs.voiceStyle)));
   $('#rateRange').value = prefs.rate; $('#rateVal').textContent = Number(prefs.rate).toFixed(2).replace(/0$/, '') + '×';
@@ -2376,6 +2395,13 @@ function voiceLabel(v, counts) {
   }
   return `${v.name} · ${accent.trim()}${online ? ' · online' : ''}`;
 }
+// Friendly names for every English voice, numbered the same way as in the picker.
+function voiceLabelOf(name) {
+  const list = deviceVoices().filter((v) => /^en/i.test(v.lang)).sort((a, b) => a.lang.localeCompare(b.lang) || a.name.localeCompare(b.name));
+  const n = {}; let out = name;
+  for (const g of ['Male', 'Female', '']) for (const v of list) if (voiceGender(v) === g) { const l = voiceLabel(v, n); if ((v.voiceURI || v.name) === name || v.name === name) out = l; }
+  return out;
+}
 function renderVoicePick() {
   const sel = $('#voicePick'), note = $('#voicePickNote');
   if (!('speechSynthesis' in window)) { sel.replaceChildren(new Option('Not available in this browser', '')); sel.disabled = true; note.textContent = 'This browser has no built-in voices. Answers still appear as text' + (cloudOK ? ', and the cloud voice can speak them.' : '.'); return; }
@@ -2399,6 +2425,96 @@ function renderVoicePick() {
     : 'No voices have loaded yet. If this stays empty, this device has no text-to-speech voices installed.';
 }
 $('#voicePick').addEventListener('change', (e) => { savePref('voiceName', e.target.value); pickVoice(); renderVoiceStatus(); unlockAudio(); if (busy) interrupt(); speakOnce('Hi! This is how I sound now.'); });
+
+// ---------- My voice ----------
+let mvSamples = null, mvRec = null;
+function saveMyVoice() { store.set('myVoice', myVoice); renderMyVoice(); }
+function renderMyVoice() {
+  $('#twVoice').addEventListener('click', () => { show('settings'); setTimeout(() => $('#myVoiceCard').scrollIntoView({ behavior: 'smooth', block: 'start' }), 80); });
+$$('#myVoiceSeg button').forEach((b) => b.setAttribute('aria-checked', String(b.dataset.mv === myVoice.mode)));
+  const m = myVoice.match, key = voiceClone.getKey();
+  $('#mvRead').textContent = READ_ALOUD;
+  $('#twVoiceNote').textContent = myVoice.mode === 'clone' && myVoice.cloneId ? 'Using your cloned voice' : myVoice.mode === 'match' && m ? 'Using your voice match' : '';
+  $('#mvPlayBtn').hidden = !m;
+  $('#mvDelClone').hidden = !myVoice.cloneId;
+  $('#elKeyInput').placeholder = key ? 'Key saved ✓ (paste a new one to replace it)' : 'ElevenLabs API key';
+  $('#mvMakeClone').textContent = myVoice.cloneId ? '✨ Remake my clone' : '✨ Make my clone';
+  const label = m ? (m.voiceName ? voiceLabelOf(m.voiceName) : 'the built-in voice') : '';
+  $('#myVoiceStatus').textContent = myVoice.mode === 'off' ? 'Off: the tutor uses the voice chosen above.'
+    : myVoice.mode === 'match' ? (m ? `On: ${label} tuned to you (pitch ×${m.pitch}, speed ×${m.rate}).` : 'Record your voice below to turn this on.')
+    : !myVoice.cloneId ? 'Record at least 30 seconds below, add your ElevenLabs key, then tap “Make my clone”.'
+    : !key ? 'Add your ElevenLabs key below to use your clone.'
+    : cloneDown ? 'Your clone isn\'t reachable right now; using ' + (m ? 'your voice match.' : 'the built-in voice.') : 'On: the tutor speaks with your cloned voice (needs internet).';
+}
+$$('#myVoiceSeg button').forEach((b) => b.addEventListener('click', () => { myVoice.mode = b.dataset.mv; cloneDown = false; cloneFails = 0; saveMyVoice(); }));
+const mvSay = (t, err) => { const r = $('#mvResult'); r.textContent = t; r.classList.toggle('err', Boolean(err)); };
+async function useRecording(data) {
+  let a;
+  try { a = analyzeVoice(data); } catch (e) { mvSay(e.message, true); return; }
+  mvSamples = data;
+  const m = matchVoice(a, deviceVoices(), voiceGender, cfg.lang);
+  myVoice.match = m;
+  if (myVoice.mode === 'off') myVoice.mode = 'match';
+  saveMyVoice();
+  const label = m.voiceName ? voiceLabelOf(m.voiceName) : 'the built-in voice';
+  mvSay(`Your voice: about ${a.f0} Hz (${a.f0 < 160 ? 'a lower' : 'a higher'} voice) at ${a.pace} syllables a second, ${a.seconds} s recorded. Matched with ${label}${m.exact ? '' : ` (no ${a.gender.toLowerCase()} voice is installed here, so I tuned the closest one; install more voices for a better match)`}.` + (a.seconds < 30 ? ' For a clone, record at least 30 seconds.' : ' Long enough for a clone too.'));
+  unlockAudio(); if (busy) interrupt();
+  speakOnce('Hi! This is how I sound with your voice.');
+}
+$('#mvRecBtn').addEventListener('click', async () => {
+  const btn = $('#mvRecBtn');
+  if (mvRec) { const r = mvRec; mvRec = null; btn.classList.remove('rec'); btn.textContent = '🎙 Record my voice'; $('#mvRead').classList.remove('recording'); $('#mvLevel').style.width = '0'; useRecording(await r.stop()); return; }
+  if (MIC_NOTE) { mvSay('Recording isn\'t possible inside this preview. Upload a recording instead, or use the app or the standalone file.', true); return; }
+  mute(); stopSpeech();
+  try {
+    mvRec = await startRecording({ maxSec: 90, onLevel: (l, sec) => { $('#mvLevel').style.width = Math.round(l * 100) + '%'; btn.textContent = `■ Stop (${Math.floor(sec)} s)`; } });
+    btn.classList.add('rec'); btn.textContent = '■ Stop (0 s)'; $('#mvRead').classList.add('recording');
+    mvSay('Recording… read the passage above in your normal voice. Tap Stop when you\'re done (30 seconds or more is best).');
+    mvRec.done.then((d) => { if (mvRec) { mvRec = null; btn.classList.remove('rec'); btn.textContent = '🎙 Record my voice'; $('#mvRead').classList.remove('recording'); useRecording(d); } });
+  } catch (e) {
+    mvRec = null;
+    mvSay(/denied|allowed|permission/i.test(e.name + e.message) ? 'The microphone is blocked. Allow it for this app, or upload a recording instead.' : e.message, true);
+  }
+});
+$('#mvFile').addEventListener('change', async (e) => {
+  const f = e.target.files?.[0]; e.target.value = '';
+  if (!f) return;
+  mvSay('Listening to your recording…');
+  try { useRecording(await decodeFile(f)); } catch { mvSay('I couldn\'t read that file. Try an MP3, M4A, WAV or a voice note.', true); }
+});
+$('#mvPlayBtn').addEventListener('click', () => { unlockAudio(); if (busy) interrupt(); speakOnce('Hi! This is my voice. Let\'s learn something amazing together.'); });
+$('#mvCloneBox').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const k = $('#elKeyInput').value.trim();
+  if (!k) return;
+  voiceClone.setKey(k); $('#elKeyInput').value = ''; cloneDown = false; cloneFails = 0;
+  mvSay('ElevenLabs key saved on this device.'); renderMyVoice();
+});
+$('#mvMakeClone').addEventListener('click', async () => {
+  const k = $('#elKeyInput').value.trim();
+  if (k) { voiceClone.setKey(k); $('#elKeyInput').value = ''; }
+  if (!voiceClone.getKey()) { mvSay('Add your ElevenLabs key first.', true); return; }
+  if (!$('#mvConsent').checked) { mvSay('Please tick the box to confirm it\'s your voice (or you have permission).', true); return; }
+  if (!mvSamples) { mvSay('Record your voice (or upload a recording) first.', true); return; }
+  if (mvSamples.samples.length / mvSamples.rate < 20) { mvSay('That recording is a bit short for a good clone. Record at least 30 seconds.', true); return; }
+  const btn = $('#mvMakeClone'); btn.disabled = true; mvSay('Making your voice clone… this takes a few seconds.');
+  try {
+    const id = await voiceClone.create(`${Account.firstName || 'My'} voice (Holo Tutor)`, toWav(mvSamples));
+    if (myVoice.cloneId && myVoice.cloneId !== id) voiceClone.remove(myVoice.cloneId);
+    myVoice.cloneId = id; myVoice.mode = 'clone'; cloneDown = false; cloneFails = 0;
+    saveMyVoice();
+    mvSay('Your clone is ready! This is how it sounds.');
+    unlockAudio(); if (busy) interrupt();
+    speakOnce('Hi! This is my cloned voice. Let\'s learn something amazing together.');
+  } catch (e) { mvSay(e.message, true); }
+  finally { btn.disabled = false; }
+});
+$('#mvDelClone').addEventListener('click', async () => {
+  if (!myVoice.cloneId) return;
+  voiceClone.remove(myVoice.cloneId);
+  myVoice.cloneId = null; if (myVoice.mode === 'clone') myVoice.mode = myVoice.match ? 'match' : 'off';
+  saveMyVoice(); mvSay('Clone deleted from ElevenLabs and this app.');
+});
 
 // ---------- starting and stopping the voice ----------
 function startVoice() {

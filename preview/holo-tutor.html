@@ -833,6 +833,22 @@ body[data-state="typing"] .typerow.dictating ~ .voicedeck .mic { background: rad
 .sesstitle > * { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .sesshead > button { flex-shrink: 0; }
 @media (max-width: 420px) { .sesshead .pilltext { display: none; } .sesshead .pill { padding-inline: 12px; } }
+
+/* ---------- My voice ---------- */
+.myvoice { padding: 14px; border-radius: 20px; border: 1px solid rgba(79, 227, 255, .28); background: radial-gradient(120% 140% at 0% 0%, #0C1D24, var(--surface) 65%); }
+.newtag { font-size: 10px; padding: 2px 6px; border-radius: 99px; background: rgba(79, 227, 255, .15); color: var(--cyan); margin-left: 6px; letter-spacing: .06em; }
+.mvstatus { color: var(--cyan); min-height: 1em; }
+.mvrec { display: flex; flex-direction: column; gap: 10px; }
+.mvread { margin: 0; padding: 10px 12px; border-radius: 14px; background: #0A1217; border: 1px dashed #24343E; font-size: 15px; line-height: 1.5; color: #D6E4EA; }
+.mvread.recording { border-color: rgba(255, 99, 99, .6); }
+.mvmeter { height: 6px; border-radius: 99px; background: #0E161C; overflow: hidden; }
+.mvmeter i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--cyan), #9BF3FF); border-radius: inherit; transition: width .08s; }
+.mvbtns { flex-wrap: wrap; gap: 8px; }
+.mvupload { cursor: pointer; display: inline-flex; align-items: center; }
+.mvclone { margin-top: 6px; padding-top: 12px; border-top: 1px solid #1A2830; }
+.mvconsent { display: flex; gap: 8px; align-items: flex-start; font-size: 13px; color: #B8C7CF; }
+.mvconsent input { margin-top: 3px; accent-color: var(--cyan); }
+#mvRecBtn.rec { background: #FF5A5A; color: #fff; }
 </style>
 <div id="phone">
 
@@ -1314,6 +1330,8 @@ body[data-state="typing"] .typerow.dictating ~ .voicedeck .mic { background: rad
           <div class="row"><button id="sampleAdd" class="pill-outline" type="button">Add writing sample</button><span id="sampleCount" class="small muted"></span></div></div>
         <div class="field"><span class="label">YOUR TWIN PROFILE</span><div id="twProfile" class="twprofile"></div>
           <div class="row"><button id="twBuild" class="pill-outline" type="button">✨ Update my twin</button></div></div>
+        <div class="field"><span class="label">YOUR TWIN'S VOICE</span>
+          <div class="row"><button id="twVoice" class="pill-outline" type="button">🎙 Give it my voice</button><span id="twVoiceNote" class="small muted"></span></div></div>
         <button id="twTalk" class="cta twtalk" type="button">💬 Talk to my twin</button>
         <button id="twReset" class="guestbtn danger" type="button">Delete my twin</button>
       </div>
@@ -1373,6 +1391,36 @@ body[data-state="typing"] .typerow.dictating ~ .voicedeck .mic { background: rad
         <label for="voicePick" class="label">VOICE ON THIS DEVICE</label>
         <select id="voicePick" class="select"></select>
         <p id="voicePickNote" class="small muted"></p>
+      </div>
+      <div class="field myvoice" id="myVoiceCard">
+        <span class="label">MY VOICE <span class="newtag">NEW</span></span>
+        <p class="small muted">Let the tutor (and your AI twin) speak in a voice like yours. Read a short passage aloud once.</p>
+        <div class="seg3" role="radiogroup" aria-label="My voice" id="myVoiceSeg">
+          <button role="radio" data-mv="off">Off</button>
+          <button role="radio" data-mv="match">Voice match</button>
+          <button role="radio" data-mv="clone">My clone</button>
+        </div>
+        <p id="myVoiceStatus" class="small mvstatus"></p>
+        <div id="mvRecorder" class="mvrec">
+          <p class="mvread" id="mvRead"></p>
+          <div class="mvmeter"><i id="mvLevel"></i></div>
+          <div class="row mvbtns">
+            <button id="mvRecBtn" class="pill" type="button">🎙 Record my voice</button>
+            <label class="pill-outline mvupload">⬆ Upload a recording<input id="mvFile" type="file" accept="audio/*" hidden></label>
+            <button id="mvPlayBtn" class="pill-outline" type="button" hidden>▶ Hear the match</button>
+          </div>
+          <p id="mvResult" class="small muted"></p>
+        </div>
+        <form id="mvCloneBox" class="keybox mvclone" autocomplete="off">
+          <label for="elKeyInput" class="label">ELEVENLABS KEY (FOR "MY CLONE")</label>
+          <div class="typerow"><input id="elKeyInput" type="password" placeholder="ElevenLabs API key"><button type="submit" class="pill">Save</button></div>
+          <span class="small muted">A real copy of your voice. Needs an ElevenLabs plan with voice cloning (Starter or higher) and internet. The key stays on this device.</span>
+          <label class="mvconsent"><input id="mvConsent" type="checkbox"> This is my own voice, or the person has agreed to it being copied.</label>
+          <div class="row mvbtns">
+            <button id="mvMakeClone" class="pill" type="button">✨ Make my clone</button>
+            <button id="mvDelClone" class="pill-outline" type="button" hidden>Delete clone</button>
+          </div>
+        </form>
       </div>
       <div class="field">
         <span class="label">VOICE ENGINE</span>
@@ -3467,6 +3515,180 @@ function cleanProfile(j) {
   return { summary: twClip(j.summary, 400), style: twClip(j.style, 300), phrases: arr(j.phrases, 6), facts: arr(j.facts, 12), interests: arr(j.interests, 8), opinions: arr(j.opinions, 8), humor: twClip(j.humor, 200), greeting: twClip(j.greeting, 160) };
 }
 
+// Holo Tutor — "My voice": the tutor speaks in a voice like yours.
+//  · Voice match (free, works offline): record yourself reading a short passage; the app
+//    measures your pitch and pace, picks the closest voice on this device (male/female,
+//    accent) and tunes its pitch and speed to you.
+//  · Voice clone (optional, needs an ElevenLabs key): the same recording is sent to
+//    ElevenLabs once to make a copy of your voice; the tutor then speaks with it.
+// The recording itself is only kept in memory while you're on the screen.
+
+const READ_ALOUD = 'Hi, this is my voice. I love learning new things, like how the stars shine, why the sky is blue, and how numbers help us build bridges and games. When I explain something, I like to take my time, keep it simple, and make it fun. My favourite way to learn is by asking questions, trying things out, and laughing when I get them wrong. Yesterday I read about volcanoes, rainforests and the deepest parts of the ocean, and I still have so many questions. Thanks for listening, and let\'s learn something amazing together today!';
+
+// ---------- recording ----------
+// Records from the microphone until stop() (or maxSec). Calls onLevel(0..1, seconds) while recording.
+async function startRecording({ maxSec = 60, onLevel } = {}) {
+  if (!navigator.mediaDevices?.getUserMedia) throw new Error('This browser can\'t record audio here. Upload a recording instead.');
+  const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
+  const ctx = new (window.AudioContext || window.webkitAudioContext)();
+  await ctx.resume?.();
+  const src = ctx.createMediaStreamSource(stream);
+  const proc = ctx.createScriptProcessor(4096, 1, 1);
+  const chunks = []; let n = 0, stopped = false, resolveDone;
+  const done = new Promise((r) => { resolveDone = r; });
+  proc.onaudioprocess = (e) => {
+    if (stopped) return;
+    const d = e.inputBuffer.getChannelData(0);
+    chunks.push(new Float32Array(d)); n += d.length;
+    let s = 0; for (let i = 0; i < d.length; i += 4) s += d[i] * d[i];
+    onLevel?.(Math.min(1, Math.sqrt(s / (d.length / 4)) * 5), n / ctx.sampleRate);
+    if (n / ctx.sampleRate >= maxSec) stop();
+  };
+  src.connect(proc); proc.connect(ctx.destination);
+  function stop() {
+    if (stopped) return done;
+    stopped = true;
+    try { proc.disconnect(); src.disconnect(); } catch {}
+    stream.getTracks().forEach((t) => t.stop());
+    const all = new Float32Array(n); let o = 0;
+    for (const c of chunks) { all.set(c, o); o += c.length; }
+    const rate = ctx.sampleRate;
+    ctx.close?.();
+    resolveDone({ samples: all, rate });
+    return done;
+  }
+  return { stop, done };
+}
+// An uploaded recording (any format the browser can play) → mono samples.
+async function decodeFile(file) {
+  const ctx = new (window.AudioContext || window.webkitAudioContext)();
+  try {
+    const buf = await ctx.decodeAudioData(await file.arrayBuffer());
+    const ch = buf.numberOfChannels, len = buf.length, out = new Float32Array(len);
+    for (let c = 0; c < ch; c++) { const d = buf.getChannelData(c); for (let i = 0; i < len; i++) out[i] += d[i] / ch; }
+    return { samples: out, rate: buf.sampleRate };
+  } finally { ctx.close?.(); }
+}
+
+// ---------- analysis ----------
+// Pitch (median of voiced frames, by autocorrelation) and pace (syllable-like loudness peaks per second).
+function analyzeVoice({ samples, rate }) {
+  const hop = Math.round(rate * 0.01), win = Math.round(rate * 0.04);
+  const rms = [];
+  for (let i = 0; i + win < samples.length; i += hop) {
+    let s = 0; for (let j = 0; j < win; j += 2) s += samples[i + j] * samples[i + j];
+    rms.push(Math.sqrt(s / (win / 2)));
+  }
+  if (rms.length < 50) throw new Error('That recording is too short. Speak for at least 5 seconds.');
+  const sorted = rms.slice().sort((a, b) => a - b);
+  const noise = sorted[Math.floor(sorted.length * 0.15)], loud = sorted[Math.floor(sorted.length * 0.95)];
+  if (loud < 0.01) throw new Error('I couldn\'t hear anything. Check the microphone and speak a little louder.');
+  const thr = noise + (loud - noise) * 0.25;
+  // pitch on voiced frames
+  const minLag = Math.floor(rate / 400), maxLag = Math.ceil(rate / 65), f0s = [];
+  for (let k = 0; k < rms.length; k += 3) {
+    if (rms[k] < thr) continue;
+    const st = k * hop, N = Math.min(win * 1.5 | 0, samples.length - st - maxLag);
+    if (N < win) continue;
+    let e0 = 0; for (let j = 0; j < N; j++) e0 += samples[st + j] * samples[st + j];
+    let best = 0, bestLag = 0;
+    for (let lag = minLag; lag <= maxLag; lag++) {
+      let s = 0, e1 = 0;
+      for (let j = 0; j < N; j += 2) { s += samples[st + j] * samples[st + j + lag]; e1 += samples[st + j + lag] * samples[st + j + lag]; }
+      const r = s / Math.sqrt(e0 / 2 * e1 + 1e-12);
+      if (r > best) { best = r; bestLag = lag; }
+    }
+    if (best > 0.55 && bestLag) f0s.push(rate / bestLag);
+  }
+  if (f0s.length < 8) throw new Error('I couldn\'t make out your voice clearly. Try somewhere quieter, a little closer to the mic.');
+  f0s.sort((a, b) => a - b);
+  // drop octave errors at the edges, then take the middle
+  const f0 = f0s[Math.floor(f0s.length / 2)];
+  // pace: smoothed loudness peaks while speaking
+  const sm = rms.map((_, i) => { let s = 0, c = 0; for (let j = Math.max(0, i - 3); j <= Math.min(rms.length - 1, i + 3); j++) { s += rms[j]; c++; } return s / c; });
+  let peaks = 0, last = -99, speechFrames = 0;
+  for (let i = 1; i < sm.length - 1; i++) {
+    if (sm[i] > thr) speechFrames++;
+    if (sm[i] > thr && sm[i] >= sm[i - 1] && sm[i] > sm[i + 1] && i - last > 12) { peaks++; last = i; }
+  }
+  const speechSec = Math.max(1, speechFrames / 100);
+  const pace = Math.min(8, Math.max(2, peaks / speechSec));
+  return { f0: Math.round(f0), pace: Math.round(pace * 10) / 10, seconds: Math.round(samples.length / rate), gender: f0 < 160 ? 'Male' : 'Female' };
+}
+
+// The closest device voice and the pitch/speed to give it.
+function matchVoice(a, voices, genderOf, preferLang = 'en-IN') {
+  const en = voices.filter((v) => /^en/i.test(v.lang));
+  const pool = en.length ? en : voices;
+  const same = pool.filter((v) => genderOf(v) === a.gender);
+  const cands = same.length ? same : pool;
+  const region = (v) => String(v.lang || '').replace('_', '-').toLowerCase();
+  const score = (v) => (region(v) === preferLang.toLowerCase() ? 4 : region(v).startsWith('en-in') ? 3 : 0)
+    + (navigator.onLine !== false && (v.localService === false || /network/i.test(v.name)) ? 1 : 0)
+    + (/natural|neural|enhanced|premium/i.test(v.name) ? 1 : 0);
+  const voice = cands.slice().sort((x, y) => score(y) - score(x))[0] || null;
+  const ref = (voice ? genderOf(voice) || a.gender : a.gender) === 'Male' ? 118 : 205; // typical pitch of such a voice
+  const pitch = Math.min(1.3, Math.max(0.75, Math.pow(a.f0 / ref, 0.8)));
+  const rate = Math.min(1.2, Math.max(0.85, a.pace / 4.6));
+  return { voiceName: voice ? voice.voiceURI || voice.name : '', voiceLabel: voice?.name || '', gender: a.gender, exact: same.length > 0, pitch: Math.round(pitch * 100) / 100, rate: Math.round(rate * 100) / 100, f0: a.f0, pace: a.pace };
+}
+
+// ---------- WAV (for the clone upload: every service accepts it) ----------
+function toWav({ samples, rate }, target = 22050, maxSec = 120) {
+  const ratio = rate / target, len = Math.min(Math.floor(samples.length / ratio), target * maxSec);
+  const out = new DataView(new ArrayBuffer(44 + len * 2));
+  const w = (o, s) => { for (let i = 0; i < s.length; i++) out.setUint8(o + i, s.charCodeAt(i)); };
+  w(0, 'RIFF'); out.setUint32(4, 36 + len * 2, true); w(8, 'WAVE'); w(12, 'fmt ');
+  out.setUint32(16, 16, true); out.setUint16(20, 1, true); out.setUint16(22, 1, true);
+  out.setUint32(24, target, true); out.setUint32(28, target * 2, true); out.setUint16(32, 2, true); out.setUint16(34, 16, true);
+  w(36, 'data'); out.setUint32(40, len * 2, true);
+  let peak = 0; for (let i = 0; i < samples.length; i++) peak = Math.max(peak, Math.abs(samples[i]));
+  const gain = peak > 0 ? Math.min(4, 0.9 / peak) : 1;
+  for (let i = 0; i < len; i++) {
+    const s = Math.max(-1, Math.min(1, samples[Math.floor(i * ratio)] * gain));
+    out.setInt16(44 + i * 2, s < 0 ? s * 0x8000 : s * 0x7fff, true);
+  }
+  return new Blob([out], { type: 'audio/wav' });
+}
+
+// ---------- ElevenLabs voice clone ----------
+const EL = 'https://api.elevenlabs.io/v1';
+const EL_KEY = 'holotutor.elKey';
+const voiceClone = {
+  getKey() { try { return localStorage.getItem(EL_KEY) || ''; } catch { return ''; } },
+  setKey(k) { try { if (k) localStorage.setItem(EL_KEY, k); else localStorage.removeItem(EL_KEY); } catch {} },
+  async call(path, init = {}) {
+    let r;
+    try { r = await fetch(EL + path, { ...init, headers: { 'xi-api-key': this.getKey(), ...(init.headers || {}) } }); }
+    catch { throw new Error('Can\'t reach ElevenLabs. Check your internet connection.'); }
+    if (!r.ok) {
+      let msg = ''; try { const j = await r.json(); msg = j.detail?.message || j.detail?.status || (typeof j.detail === 'string' ? j.detail : ''); } catch {}
+      if (r.status === 401) throw new Error('ElevenLabs didn\'t accept that key. Check it in Settings → My voice.');
+      if (/can_not_use_instant_voice_cloning|subscription|upgrade/i.test(msg)) throw new Error('Your ElevenLabs plan doesn\'t include voice cloning. It needs the Starter plan or higher.');
+      throw new Error(`ElevenLabs error ${r.status}${msg ? ': ' + msg : ''}`);
+    }
+    return r;
+  },
+  async create(name, wavBlob) {
+    const fd = new FormData();
+    fd.append('name', String(name || 'My voice').slice(0, 60));
+    fd.append('description', 'Made with Holo Tutor from the owner\'s own recording.');
+    fd.append('remove_background_noise', 'true');
+    fd.append('files', wavBlob, 'my-voice.wav');
+    const j = await (await this.call('/voices/add', { method: 'POST', body: fd })).json();
+    if (!j.voice_id) throw new Error('ElevenLabs didn\'t return a voice.');
+    return j.voice_id;
+  },
+  async remove(id) { try { await this.call('/voices/' + encodeURIComponent(id), { method: 'DELETE' }); } catch {} },
+  async synth(id, text, rate = 1) {
+    const r = await this.call(`/text-to-speech/${encodeURIComponent(id)}?output_format=mp3_44100_64`, {
+      method: 'POST', headers: { 'content-type': 'application/json', accept: 'audio/mpeg' },
+      body: JSON.stringify({ text: String(text).slice(0, 2500), model_id: 'eleven_flash_v2_5', voice_settings: { stability: 0.5, similarity_boost: 0.85, speed: Math.min(1.2, Math.max(0.7, rate)) } }),
+    });
+    return r.blob();
+  },
+};
+
 // Preview build: asks Claude straight from the page (the viewer's own Claude account).
 const MIC_NOTE = 'Tap the mic for voice typing: speak with your device\'s dictation (phone keyboard 🎤, Windows + H, or Edit → Start Dictation on a Mac) and I\'ll answer out loud.';
 const KEY_NEEDED = false;
@@ -3559,7 +3781,7 @@ const lsSet = (k, v) => { try { localStorage.setItem(LS(k), JSON.stringify(v)); 
 const lsDel = (k) => { try { localStorage.removeItem(LS(k)); } catch {} };
 
 // What belongs to a learner (synced, per account) vs. to the device (shared).
-const DATA_KEYS = ['progress', 'funprog', 'lessons', 'qotd', 'twin', 'photo', 'rig', 'mouth', 'kind', 'photoLook', 'faceFrame', 'subject', 'level', 'voiceStyle', 'rate', 'bargeIn', 'wake'];
+const DATA_KEYS = ['progress', 'funprog', 'lessons', 'qotd', 'twin', 'myVoice', 'photo', 'rig', 'mouth', 'kind', 'photoLook', 'faceFrame', 'subject', 'level', 'voiceStyle', 'rate', 'bargeIn', 'wake'];
 const AVATARS = ['🧑‍🚀', '🦊', '🐼', '🦄', '🐯', '🤖', '🐙', '🦉', '🐬', '🦖', '🌟', '🎧'];
 
 let active = lsGet('account', null); // { type: 'server'|'local', id, name, avatar, email? }
@@ -4469,6 +4691,10 @@ function setStatus(state) {
 const speechQ = []; // [{ text, audio?: Promise<Blob> }]
 let speakingNow = false, currentItem = null, watchdog = 0, voice = null;
 let deviceBroken = false, cloudOK = false, cloudFails = 0, voiceNoticeShown = false;
+// "My voice": a matched device voice (free) or a cloned voice (ElevenLabs).
+let myVoice = store.get('myVoice', { mode: 'off' }), cloneFails = 0, cloneDown = false;
+const cloneOn = () => myVoice.mode === 'clone' && Boolean(myVoice.cloneId) && Boolean(voiceClone.getKey()) && !cloneDown;
+const matchOn = () => (myVoice.mode === 'match' || (myVoice.mode === 'clone' && !cloneOn())) && Boolean(myVoice.match?.voiceName || myVoice.match?.pitch);
 const hasDevice = () => 'speechSynthesis' in window && !deviceBroken;
 const deviceVoices = () => { try { return speechSynthesis.getVoices(); } catch { return []; } };
 function pickVoice() {
@@ -4498,16 +4724,23 @@ const voiceOpts = () => ({ lang: cfg.lang, style: prefs.voiceStyle, rate: cfg.ra
 function makeUtterance(text) {
   const u = new SpeechSynthesisUtterance(text);
   const st = VOICE_STYLES[prefs.voiceStyle] || VOICE_STYLES.Clear;
-  if (voice) { try { u.voice = voice; } catch {} }
-  u.lang = voice?.lang || cfg.lang;
-  u.rate = st.rate * cfg.rate; u.pitch = st.pitch;
+  let v = voice, pitch = st.pitch, rate = st.rate;
+  if (matchOn()) { // your voice match: the closest voice here, tuned to your pitch and pace
+    const m = myVoice.match;
+    v = (m.voiceName && deviceVoices().find((x) => x.voiceURI === m.voiceName || x.name === m.voiceName)) || voice;
+    pitch = m.pitch || 1; rate = m.rate || 1;
+  }
+  if (v) { try { u.voice = v; } catch {} }
+  u.lang = v?.lang || cfg.lang;
+  u.rate = rate * cfg.rate; u.pitch = pitch;
   return u;
 }
 function enqueueSpeech(text) {
   const t = cleanForSpeech(text);
   if (t) {
     const item = { text: t };
-    if (useCloud()) item.audio = cloudVoice.synth(t, voiceOpts()); // start fetching now so sentences play back to back
+    if (cloneOn() && !prefs.muted) { item.audio = voiceClone.synth(myVoice.cloneId, t, cfg.rate); item.clone = true; }
+    else if (useCloud()) item.audio = cloudVoice.synth(t, voiceOpts()); // start fetching now so sentences play back to back
     else if (langBase(cfg.lang) !== 'en' && deviceVoices().length && !deviceHasLang()) noVoiceNotice(); // still tries, but warn: no voice for this language
     speechQ.push(item);
   }
@@ -4556,7 +4789,7 @@ function playCloud(item, done) {
   watchdog = setTimeout(done, 15000 + item.text.length * 150);
   item.audio.then((blob) => {
     if (currentItem !== item) return;
-    cloudFails = 0;
+    if (item.clone) cloneFails = 0; else cloudFails = 0;
     const url = URL.createObjectURL(blob);
     const finish = () => { URL.revokeObjectURL(url); done(); };
     player.onloadedmetadata = () => {
@@ -4569,8 +4802,13 @@ function playCloud(item, done) {
     player.play().catch((e) => { admLog('err', 'voice playback: ' + e.message); finish(); });
   }).catch((e) => {
     if (currentItem !== item) return;
-    admLog('err', 'cloud voice: ' + e.message);
-    if (++cloudFails >= 2) { cloudOK = false; renderVoiceStatus(); }
+    admLog('err', (item.clone ? 'voice clone: ' : 'cloud voice: ') + e.message);
+    if (item.clone) {
+      if (++cloneFails >= 2 || /key|plan|reach/i.test(e.message)) {
+        if (!cloneDown) addMsg('tutor', `My cloned voice isn't working right now (${e.message}) so I'm using ${myVoice.match ? 'your voice match' : 'the built-in voice'} for now.`).el.classList.add('err');
+        cloneDown = true; speechQ.forEach((q) => { if (q.clone) { q.audio = null; q.clone = false; } });
+      }
+    } else if (++cloudFails >= 2) { cloudOK = false; renderVoiceStatus(); }
     if (hasDevice()) { item.audio = null; speakDevice(item, done); } else { noVoiceNotice(); done(); }
   });
 }
@@ -5643,6 +5881,7 @@ const saveTwin = () => store.set('twin', twin);
 const twinFirst = () => (twin.name || Account.active?.name || 'my').split(' ')[0];
 const ACKS = ['Got it!', 'Love that.', 'Nice, noted.', 'That sounds like you.', 'Thanks, I\'m learning.', 'Okay, saved.'];
 function renderTrain() {
+  renderMyVoice();
   const ok = twin.consent;
   $('#twinConsent').hidden = ok; $('#twinMain').hidden = !ok;
   if (!ok) { $('#twinNameIn').value = twin.name || Account.active?.name || ''; return; }
@@ -5780,6 +6019,7 @@ function unlockAudio() {
 function renderSettings() {
   renderAccount();
   renderVoicePick();
+  renderMyVoice();
   renderVoiceStatus();
   $$('#setVoiceSeg button').forEach((b) => b.setAttribute('aria-checked', String(b.dataset.voice === prefs.voiceStyle)));
   $('#rateRange').value = prefs.rate; $('#rateVal').textContent = Number(prefs.rate).toFixed(2).replace(/0$/, '') + '×';
@@ -6079,6 +6319,13 @@ function voiceLabel(v, counts) {
   }
   return `${v.name} · ${accent.trim()}${online ? ' · online' : ''}`;
 }
+// Friendly names for every English voice, numbered the same way as in the picker.
+function voiceLabelOf(name) {
+  const list = deviceVoices().filter((v) => /^en/i.test(v.lang)).sort((a, b) => a.lang.localeCompare(b.lang) || a.name.localeCompare(b.name));
+  const n = {}; let out = name;
+  for (const g of ['Male', 'Female', '']) for (const v of list) if (voiceGender(v) === g) { const l = voiceLabel(v, n); if ((v.voiceURI || v.name) === name || v.name === name) out = l; }
+  return out;
+}
 function renderVoicePick() {
   const sel = $('#voicePick'), note = $('#voicePickNote');
   if (!('speechSynthesis' in window)) { sel.replaceChildren(new Option('Not available in this browser', '')); sel.disabled = true; note.textContent = 'This browser has no built-in voices. Answers still appear as text' + (cloudOK ? ', and the cloud voice can speak them.' : '.'); return; }
@@ -6102,6 +6349,96 @@ function renderVoicePick() {
     : 'No voices have loaded yet. If this stays empty, this device has no text-to-speech voices installed.';
 }
 $('#voicePick').addEventListener('change', (e) => { savePref('voiceName', e.target.value); pickVoice(); renderVoiceStatus(); unlockAudio(); if (busy) interrupt(); speakOnce('Hi! This is how I sound now.'); });
+
+// ---------- My voice ----------
+let mvSamples = null, mvRec = null;
+function saveMyVoice() { store.set('myVoice', myVoice); renderMyVoice(); }
+function renderMyVoice() {
+  $('#twVoice').addEventListener('click', () => { show('settings'); setTimeout(() => $('#myVoiceCard').scrollIntoView({ behavior: 'smooth', block: 'start' }), 80); });
+$$('#myVoiceSeg button').forEach((b) => b.setAttribute('aria-checked', String(b.dataset.mv === myVoice.mode)));
+  const m = myVoice.match, key = voiceClone.getKey();
+  $('#mvRead').textContent = READ_ALOUD;
+  $('#twVoiceNote').textContent = myVoice.mode === 'clone' && myVoice.cloneId ? 'Using your cloned voice' : myVoice.mode === 'match' && m ? 'Using your voice match' : '';
+  $('#mvPlayBtn').hidden = !m;
+  $('#mvDelClone').hidden = !myVoice.cloneId;
+  $('#elKeyInput').placeholder = key ? 'Key saved ✓ (paste a new one to replace it)' : 'ElevenLabs API key';
+  $('#mvMakeClone').textContent = myVoice.cloneId ? '✨ Remake my clone' : '✨ Make my clone';
+  const label = m ? (m.voiceName ? voiceLabelOf(m.voiceName) : 'the built-in voice') : '';
+  $('#myVoiceStatus').textContent = myVoice.mode === 'off' ? 'Off: the tutor uses the voice chosen above.'
+    : myVoice.mode === 'match' ? (m ? `On: ${label} tuned to you (pitch ×${m.pitch}, speed ×${m.rate}).` : 'Record your voice below to turn this on.')
+    : !myVoice.cloneId ? 'Record at least 30 seconds below, add your ElevenLabs key, then tap “Make my clone”.'
+    : !key ? 'Add your ElevenLabs key below to use your clone.'
+    : cloneDown ? 'Your clone isn\'t reachable right now; using ' + (m ? 'your voice match.' : 'the built-in voice.') : 'On: the tutor speaks with your cloned voice (needs internet).';
+}
+$$('#myVoiceSeg button').forEach((b) => b.addEventListener('click', () => { myVoice.mode = b.dataset.mv; cloneDown = false; cloneFails = 0; saveMyVoice(); }));
+const mvSay = (t, err) => { const r = $('#mvResult'); r.textContent = t; r.classList.toggle('err', Boolean(err)); };
+async function useRecording(data) {
+  let a;
+  try { a = analyzeVoice(data); } catch (e) { mvSay(e.message, true); return; }
+  mvSamples = data;
+  const m = matchVoice(a, deviceVoices(), voiceGender, cfg.lang);
+  myVoice.match = m;
+  if (myVoice.mode === 'off') myVoice.mode = 'match';
+  saveMyVoice();
+  const label = m.voiceName ? voiceLabelOf(m.voiceName) : 'the built-in voice';
+  mvSay(`Your voice: about ${a.f0} Hz (${a.f0 < 160 ? 'a lower' : 'a higher'} voice) at ${a.pace} syllables a second, ${a.seconds} s recorded. Matched with ${label}${m.exact ? '' : ` (no ${a.gender.toLowerCase()} voice is installed here, so I tuned the closest one; install more voices for a better match)`}.` + (a.seconds < 30 ? ' For a clone, record at least 30 seconds.' : ' Long enough for a clone too.'));
+  unlockAudio(); if (busy) interrupt();
+  speakOnce('Hi! This is how I sound with your voice.');
+}
+$('#mvRecBtn').addEventListener('click', async () => {
+  const btn = $('#mvRecBtn');
+  if (mvRec) { const r = mvRec; mvRec = null; btn.classList.remove('rec'); btn.textContent = '🎙 Record my voice'; $('#mvRead').classList.remove('recording'); $('#mvLevel').style.width = '0'; useRecording(await r.stop()); return; }
+  if (MIC_NOTE) { mvSay('Recording isn\'t possible inside this preview. Upload a recording instead, or use the app or the standalone file.', true); return; }
+  mute(); stopSpeech();
+  try {
+    mvRec = await startRecording({ maxSec: 90, onLevel: (l, sec) => { $('#mvLevel').style.width = Math.round(l * 100) + '%'; btn.textContent = `■ Stop (${Math.floor(sec)} s)`; } });
+    btn.classList.add('rec'); btn.textContent = '■ Stop (0 s)'; $('#mvRead').classList.add('recording');
+    mvSay('Recording… read the passage above in your normal voice. Tap Stop when you\'re done (30 seconds or more is best).');
+    mvRec.done.then((d) => { if (mvRec) { mvRec = null; btn.classList.remove('rec'); btn.textContent = '🎙 Record my voice'; $('#mvRead').classList.remove('recording'); useRecording(d); } });
+  } catch (e) {
+    mvRec = null;
+    mvSay(/denied|allowed|permission/i.test(e.name + e.message) ? 'The microphone is blocked. Allow it for this app, or upload a recording instead.' : e.message, true);
+  }
+});
+$('#mvFile').addEventListener('change', async (e) => {
+  const f = e.target.files?.[0]; e.target.value = '';
+  if (!f) return;
+  mvSay('Listening to your recording…');
+  try { useRecording(await decodeFile(f)); } catch { mvSay('I couldn\'t read that file. Try an MP3, M4A, WAV or a voice note.', true); }
+});
+$('#mvPlayBtn').addEventListener('click', () => { unlockAudio(); if (busy) interrupt(); speakOnce('Hi! This is my voice. Let\'s learn something amazing together.'); });
+$('#mvCloneBox').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const k = $('#elKeyInput').value.trim();
+  if (!k) return;
+  voiceClone.setKey(k); $('#elKeyInput').value = ''; cloneDown = false; cloneFails = 0;
+  mvSay('ElevenLabs key saved on this device.'); renderMyVoice();
+});
+$('#mvMakeClone').addEventListener('click', async () => {
+  const k = $('#elKeyInput').value.trim();
+  if (k) { voiceClone.setKey(k); $('#elKeyInput').value = ''; }
+  if (!voiceClone.getKey()) { mvSay('Add your ElevenLabs key first.', true); return; }
+  if (!$('#mvConsent').checked) { mvSay('Please tick the box to confirm it\'s your voice (or you have permission).', true); return; }
+  if (!mvSamples) { mvSay('Record your voice (or upload a recording) first.', true); return; }
+  if (mvSamples.samples.length / mvSamples.rate < 20) { mvSay('That recording is a bit short for a good clone. Record at least 30 seconds.', true); return; }
+  const btn = $('#mvMakeClone'); btn.disabled = true; mvSay('Making your voice clone… this takes a few seconds.');
+  try {
+    const id = await voiceClone.create(`${Account.firstName || 'My'} voice (Holo Tutor)`, toWav(mvSamples));
+    if (myVoice.cloneId && myVoice.cloneId !== id) voiceClone.remove(myVoice.cloneId);
+    myVoice.cloneId = id; myVoice.mode = 'clone'; cloneDown = false; cloneFails = 0;
+    saveMyVoice();
+    mvSay('Your clone is ready! This is how it sounds.');
+    unlockAudio(); if (busy) interrupt();
+    speakOnce('Hi! This is my cloned voice. Let\'s learn something amazing together.');
+  } catch (e) { mvSay(e.message, true); }
+  finally { btn.disabled = false; }
+});
+$('#mvDelClone').addEventListener('click', async () => {
+  if (!myVoice.cloneId) return;
+  voiceClone.remove(myVoice.cloneId);
+  myVoice.cloneId = null; if (myVoice.mode === 'clone') myVoice.mode = myVoice.match ? 'match' : 'off';
+  saveMyVoice(); mvSay('Clone deleted from ElevenLabs and this app.');
+});
 
 // ---------- starting and stopping the voice ----------
 function startVoice() {

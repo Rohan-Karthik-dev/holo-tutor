@@ -32,7 +32,7 @@ def strip_module(src):
     src = re.sub(r"^import .*?;\n", "", src, flags=re.M)
     return re.sub(r"^export ", "", src, flags=re.M)
 
-js = '\n'.join(strip_module((p).read_text()) for p in [R/'public/visemes.js', R/'public/face.js', R/'public/lips.js', R/'public/media.js', R/'public/i18n.js', R/'public/tts.js', R/'public/tutor.js', R/'public/prompt.js', R/'public/funprog.js', R/'public/twin.js', R/'preview/brain-preview.js', R/'public/account.js', R/'public/app.js'])
+js = '\n'.join(strip_module((p).read_text()) for p in [R/'public/visemes.js', R/'public/face.js', R/'public/lips.js', R/'public/media.js', R/'public/i18n.js', R/'public/tts.js', R/'public/tutor.js', R/'public/prompt.js', R/'public/funprog.js', R/'public/twin.js', R/'public/myvoice.js', R/'preview/brain-preview.js', R/'public/account.js', R/'public/app.js'])
 (R / 'preview/holo-tutor.html').write_text(f'''<title>Holo Tutor</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 {FONTS}
@@ -43,7 +43,7 @@ document.body.dataset.view = 'home'; document.body.dataset.state = 'idle';
 {js}
 </script>
 ''')
-js2 = '\n'.join(strip_module((p).read_text()) for p in [R/'public/visemes.js', R/'public/face.js', R/'public/lips.js', R/'public/media.js', R/'public/i18n.js', R/'public/tts.js', R/'public/tutor.js', R/'public/prompt.js', R/'public/funprog.js', R/'public/twin.js', R/'standalone/brain-direct.js', R/'public/account.js', R/'public/app.js'])
+js2 = '\n'.join(strip_module((p).read_text()) for p in [R/'public/visemes.js', R/'public/face.js', R/'public/lips.js', R/'public/media.js', R/'public/i18n.js', R/'public/tts.js', R/'public/tutor.js', R/'public/prompt.js', R/'public/funprog.js', R/'public/twin.js', R/'public/myvoice.js', R/'standalone/brain-direct.js', R/'public/account.js', R/'public/app.js'])
 (R / 'standalone/holo-tutor.html').write_text(f'''<!doctype html>
 <html lang="en">
 <head>

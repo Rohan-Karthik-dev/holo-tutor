@@ -828,3 +828,19 @@ body[data-state="typing"] .typerow.dictating ~ .voicedeck .mic { background: rad
 .sesstitle > * { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .sesshead > button { flex-shrink: 0; }
 @media (max-width: 420px) { .sesshead .pilltext { display: none; } .sesshead .pill { padding-inline: 12px; } }
+
+/* ---------- My voice ---------- */
+.myvoice { padding: 14px; border-radius: 20px; border: 1px solid rgba(79, 227, 255, .28); background: radial-gradient(120% 140% at 0% 0%, #0C1D24, var(--surface) 65%); }
+.newtag { font-size: 10px; padding: 2px 6px; border-radius: 99px; background: rgba(79, 227, 255, .15); color: var(--cyan); margin-left: 6px; letter-spacing: .06em; }
+.mvstatus { color: var(--cyan); min-height: 1em; }
+.mvrec { display: flex; flex-direction: column; gap: 10px; }
+.mvread { margin: 0; padding: 10px 12px; border-radius: 14px; background: #0A1217; border: 1px dashed #24343E; font-size: 15px; line-height: 1.5; color: #D6E4EA; }
+.mvread.recording { border-color: rgba(255, 99, 99, .6); }
+.mvmeter { height: 6px; border-radius: 99px; background: #0E161C; overflow: hidden; }
+.mvmeter i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--cyan), #9BF3FF); border-radius: inherit; transition: width .08s; }
+.mvbtns { flex-wrap: wrap; gap: 8px; }
+.mvupload { cursor: pointer; display: inline-flex; align-items: center; }
+.mvclone { margin-top: 6px; padding-top: 12px; border-top: 1px solid #1A2830; }
+.mvconsent { display: flex; gap: 8px; align-items: flex-start; font-size: 13px; color: #B8C7CF; }
+.mvconsent input { margin-top: 3px; accent-color: var(--cyan); }
+#mvRecBtn.rec { background: #FF5A5A; color: #fff; }

@@ -13,7 +13,7 @@ const lsSet = (k, v) => { try { localStorage.setItem(LS(k), JSON.stringify(v)); 
 const lsDel = (k) => { try { localStorage.removeItem(LS(k)); } catch {} };
 
 // What belongs to a learner (synced, per account) vs. to the device (shared).
-export const DATA_KEYS = ['progress', 'funprog', 'lessons', 'qotd', 'twin', 'photo', 'rig', 'mouth', 'kind', 'photoLook', 'faceFrame', 'subject', 'level', 'voiceStyle', 'rate', 'bargeIn', 'wake'];
+export const DATA_KEYS = ['progress', 'funprog', 'lessons', 'qotd', 'twin', 'myVoice', 'photo', 'rig', 'mouth', 'kind', 'photoLook', 'faceFrame', 'subject', 'level', 'voiceStyle', 'rate', 'bargeIn', 'wake'];
 export const AVATARS = ['🧑‍🚀', '🦊', '🐼', '🦄', '🐯', '🤖', '🐙', '🦉', '🐬', '🦖', '🌟', '🎧'];
 
 let active = lsGet('account', null); // { type: 'server'|'local', id, name, avatar, email? }
