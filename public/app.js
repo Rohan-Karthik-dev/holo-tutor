@@ -2421,9 +2421,12 @@ function renderVoicePick() {
   sel.value = list.some((v) => (v.voiceURI || v.name) === prefs.voiceName) ? prefs.voiceName : '';
   const m = groups.Male.length, f = groups.Female.length;
   note.textContent = all.length
-    ? `${list.length} English voice${list.length === 1 ? '' : 's'} on this device (${m} male, ${f} female${groups[''].length ? `, ${groups[''].length} other` : ''}). Voices marked “online” need internet.` + (m ? '' : ' No male voice found: on Android, open Settings → Text-to-speech → Google → Install voice data, pick English (India) or (US), and download the voices.')
+    ? `${list.length} English voice${list.length === 1 ? '' : 's'} on this device (${m} male, ${f} female${groups[''].length ? `, ${groups[''].length} other` : ''}). Voices marked “online” need internet.` + (m ? ' If a male voice still sounds female, it isn\'t downloaded yet: tap “Get more voices” and download English (India) or (US).' : ' No male voice found: tap “Get more voices” (or phone Settings → Text-to-speech → Google → Install voice data) and download English (India) or (US).')
     : 'No voices have loaded yet. If this stays empty, this device has no text-to-speech voices installed.';
+  // In the Android app: a button that opens the phone's voice installer.
+  $('#voiceInstall').hidden = !(window.__holoNative && speechSynthesis.openInstall);
 }
+$('#voiceInstall').addEventListener('click', () => { try { speechSynthesis.openInstall(); } catch {} });
 $('#voicePick').addEventListener('change', (e) => { savePref('voiceName', e.target.value); pickVoice(); renderVoiceStatus(); unlockAudio(); if (busy) interrupt(); speakOnce('Hi! This is how I sound now.'); });
 
 // ---------- My voice ----------

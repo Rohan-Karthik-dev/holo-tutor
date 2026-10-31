@@ -99,7 +99,9 @@
     let voices = [];
     const changed = [];
     const loadVoices = (tries) => TTS.getSupportedVoices().then((r) => { // the engine can take a moment to start
-      voices = (r && r.voices) || [];
+      // Android reports every voice's name as just "English India"; its real code (e.g.
+      // "en-in-x-ene-local", which tells male from female) is in voiceURI, so use that as the name.
+      voices = ((r && r.voices) || []).map((v) => ({ ...v, displayName: v.name, name: v.voiceURI || v.name }));
       if (!voices.length && tries > 0) return setTimeout(() => loadVoices(tries - 1), 1500);
       changed.forEach((f) => { try { f(); } catch (e) {} });
     }).catch(() => { if (tries > 0) setTimeout(() => loadVoices(tries - 1), 1500); });
@@ -122,6 +124,7 @@
     const synth = {
       get speaking() { return speaking; }, get pending() { return queue.length > 0; }, paused: false,
       getVoices: () => voices,
+      openInstall: () => (TTS.openInstall ? TTS.openInstall().catch(() => {}) : Promise.resolve()),
       speak(u) { queue.push(u); next(); },
       cancel() {
         queue.length = 0;
